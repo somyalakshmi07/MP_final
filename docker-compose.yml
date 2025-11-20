@@ -1,0 +1,156 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: ecommerce-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - ecommerce-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  auth-service:
+    build: ./auth-service
+    container_name: ecommerce-auth
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - MONGODB_URI=mongodb+srv://somyalakshmi17_db_user:9ft7qNZWLA5IqWUd@cluster0.v1rzlcu.mongodb.net/ecommerce?retryWrites=true&w=majority&appName=ecommerce-app
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - JWT_EXPIRES_IN=7d
+      - NODE_ENV=development
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - ecommerce-network
+
+  gateway-service:
+    build: ./gateway-service
+    container_name: ecommerce-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - CATALOG_SERVICE_URL=http://catalog-service:3002
+      - CART_SERVICE_URL=http://cart-service:3003
+      - ORDER_SERVICE_URL=http://order-service:3004
+      - PAYMENT_SERVICE_URL=http://payment-service:3005
+      - ADMIN_SERVICE_URL=http://admin-service:3006
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+    depends_on:
+      - auth-service
+      - catalog-service
+      - cart-service
+      - order-service
+      - payment-service
+      - admin-service
+    networks:
+      - ecommerce-network
+
+  catalog-service:
+    build: ./catalog-service
+    container_name: ecommerce-catalog
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - MONGODB_URI=mongodb+srv://somyalakshmi17_db_user:9ft7qNZWLA5IqWUd@cluster0.v1rzlcu.mongodb.net/ecommerce?retryWrites=true&w=majority&appName=ecommerce-app
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+    networks:
+      - ecommerce-network
+
+  cart-service:
+    build: ./cart-service
+    container_name: ecommerce-cart
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CATALOG_SERVICE_URL=http://catalog-service:3002
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+    depends_on:
+      redis:
+        condition: service_healthy
+      catalog-service:
+        condition: service_started
+    networks:
+      - ecommerce-network
+
+  order-service:
+    build: ./order-service
+    container_name: ecommerce-order
+    ports:
+      - "3004:3004"
+    environment:
+      - PORT=3004
+      - MONGODB_URI=mongodb+srv://somyalakshmi17_db_user:9ft7qNZWLA5IqWUd@cluster0.v1rzlcu.mongodb.net/ecommerce?retryWrites=true&w=majority&appName=ecommerce-app
+      - CART_SERVICE_URL=http://cart-service:3003
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+    depends_on:
+      cart-service:
+        condition: service_started
+    networks:
+      - ecommerce-network
+
+  payment-service:
+    build: ./payment-service
+    container_name: ecommerce-payment
+    ports:
+      - "3005:3005"
+    environment:
+      - PORT=3005
+      - ORDER_SERVICE_URL=http://order-service:3004
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+    depends_on:
+      order-service:
+        condition: service_started
+    networks:
+      - ecommerce-network
+
+  admin-service:
+    build: ./admin-service
+    container_name: ecommerce-admin
+    ports:
+      - "3006:3006"
+    environment:
+      - PORT=3006
+      - CATALOG_SERVICE_URL=http://catalog-service:3002
+      - ORDER_SERVICE_URL=http://order-service:3004
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+    depends_on:
+      catalog-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+    networks:
+      - ecommerce-network
+
+  frontend:
+    build: ./frontend
+    container_name: ecommerce-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - gateway-service
+    networks:
+      - ecommerce-network
+
+volumes:
+  redis-data:
+
+networks:
+  ecommerce-network:
+    driver: bridge
+

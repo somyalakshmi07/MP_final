@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway-service
+  namespace: ecommerce
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gateway-service
+  template:
+    metadata:
+      labels:
+        app: gateway-service
+    spec:
+      containers:
+      - name: gateway-service
+        image: your-registry/gateway-service:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: PORT
+          value: "3000"
+        - name: AUTH_SERVICE_URL
+          value: "http://auth-service:3001"
+        - name: CATALOG_SERVICE_URL
+          value: "http://catalog-service:3002"
+        - name: CART_SERVICE_URL
+          value: "http://cart-service:3003"
+        - name: ORDER_SERVICE_URL
+          value: "http://order-service:3004"
+        - name: PAYMENT_SERVICE_URL
+          value: "http://payment-service:3005"
+        - name: ADMIN_SERVICE_URL
+          value: "http://admin-service:3006"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: jwt-secret
+              key: secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-service
+  namespace: ecommerce
+spec:
+  type: LoadBalancer
+  selector:
+    app: gateway-service
+  ports:
+  - port: 80
+    targetPort: 3000
+
