@@ -22,11 +22,18 @@ export default function Login() {
     formState: { errors },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
   });
 
   const onSubmit = async (data: LoginForm) => {
-    await login.mutateAsync(data);
-    navigate('/products');
+    try {
+      await login.mutateAsync(data);
+      // Navigate to products page on success (handled by useLogin hook)
+      navigate('/products');
+    } catch (error) {
+      // Error handled by useLogin hook
+    }
   };
 
   return (
@@ -48,11 +55,14 @@ export default function Login() {
                   {...register('email')}
                   type="email"
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
-                  placeholder="you@example.com"
+                  placeholder="yourname@gmail.com"
                 />
               </div>
               {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <span className="mr-1">⚠️</span>
+                  {errors.email.message}
+                </p>
               )}
             </div>
             <div>
@@ -69,7 +79,10 @@ export default function Login() {
                 />
               </div>
               {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <span className="mr-1">⚠️</span>
+                  {errors.password.message}
+                </p>
               )}
             </div>
 

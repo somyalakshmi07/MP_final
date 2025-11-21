@@ -6,10 +6,26 @@ import { useRegister } from '../hooks/useAuth';
 import { Mail, Lock, User, UserPlus } from 'lucide-react';
 
 const registerSchema = z.object({
-  name: z.string().min(1, 'This field is required'),
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  confirmPassword: z.string(),
+  name: z
+    .string()
+    .min(1, 'This field is required')
+    .regex(/^[A-Za-z\s]+$/, 'Name must contain only alphabets (letters)'),
+  email: z
+    .string()
+    .min(1, 'This field is required')
+    .email('Please enter a valid email address')
+    .refine((email) => email.endsWith('@gmail.com'), {
+      message: 'Email must be a Gmail address (@gmail.com)',
+    }),
+  password: z
+    .string()
+    .min(1, 'This field is required')
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one capital letter')
+    .regex(/[a-z]/, 'Password must contain at least one small letter')
+    .regex(/[0-9]/, 'Password must contain at least one number')
+    .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special symbol'),
+  confirmPassword: z.string().min(1, 'This field is required'),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'Passwords do not match',
   path: ['confirmPassword'],
@@ -27,12 +43,17 @@ export default function Register() {
     formState: { errors },
   } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
+    mode: 'onBlur', // Validate on blur (when user leaves field)
+    reValidateMode: 'onChange', // Re-validate on change after first error
   });
 
   const onSubmit = async (data: RegisterForm) => {
     try {
       await register.mutateAsync(data);
-      navigate('/login');
+      // Navigate to login after successful registration
+      setTimeout(() => {
+        navigate('/login');
+      }, 1500); // Small delay to show success message
     } catch (error) {
       // Error handled by hook
     }
@@ -58,10 +79,20 @@ export default function Register() {
                   type="text"
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
                   placeholder="John Doe"
+                  pattern="[A-Za-z\s]+"
+                  title="Only alphabets (letters) are allowed"
                 />
               </div>
               {errors.name && (
-                <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <span className="mr-1">⚠️</span>
+                  {errors.name.message}
+                </p>
+              )}
+              {!errors.name && (
+                <p className="mt-1 text-xs text-gray-500">
+                  Only alphabets (letters) and spaces are allowed
+                </p>
               )}
             </div>
             <div>
@@ -74,11 +105,14 @@ export default function Register() {
                   {...registerField('email')}
                   type="email"
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
-                  placeholder="you@example.com"
+                  placeholder="yourname@gmail.com"
                 />
               </div>
               {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <span className="mr-1">⚠️</span>
+                  {errors.email.message}
+                </p>
               )}
             </div>
             <div>
@@ -95,7 +129,15 @@ export default function Register() {
                 />
               </div>
               {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <span className="mr-1">⚠️</span>
+                  {errors.password.message}
+                </p>
+              )}
+              {!errors.password && (
+                <p className="mt-1 text-xs text-gray-500">
+                  Password must be at least 8 characters with uppercase, lowercase, number, and special symbol
+                </p>
               )}
             </div>
             <div>
@@ -112,7 +154,10 @@ export default function Register() {
                 />
               </div>
               {errors.confirmPassword && (
-                <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>
+                <p className="mt-1 text-sm text-red-600 flex items-center">
+                  <span className="mr-1">⚠️</span>
+                  {errors.confirmPassword.message}
+                </p>
               )}
             </div>
 
