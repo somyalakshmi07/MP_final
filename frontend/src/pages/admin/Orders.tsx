@@ -100,7 +100,7 @@ export default function AdminOrders() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button
                       onClick={() => handleStatusChange(order._id, order.status)}
-                      className="text-primary-600 hover:text-primary-900"
+                      className="text-dark-blue hover:text-light-blue"
                     >
                       Update
                     </button>

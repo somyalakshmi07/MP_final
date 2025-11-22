@@ -89,7 +89,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={login.isPending}
-              className="w-full bg-primary-600 text-white py-3 rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition font-medium flex items-center justify-center space-x-2"
+              className="w-full bg-dark-blue text-white py-3 rounded-lg hover:bg-light-blue focus:outline-none focus:ring-2 focus:ring-dark-blue focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition font-medium flex items-center justify-center space-x-2"
             >
               {login.isPending ? (
                 <>
@@ -107,7 +107,7 @@ export default function Login() {
             <div className="text-center">
               <p className="text-sm text-gray-600">
                 Don't have an account?{' '}
-                <Link to="/register" className="font-medium text-primary-600 hover:text-primary-700">
+                <Link to="/register" className="font-medium text-dark-blue hover:text-light-blue">
                   Sign up
                 </Link>
               </p>

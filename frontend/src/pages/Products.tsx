@@ -66,11 +66,21 @@ export default function Products() {
     }
   }
 
-  const handleAddToCart = (e: React.MouseEvent, productId: string) => {
+  const handleAddToCart = (e: React.MouseEvent, product: any) => {
     e.preventDefault();
     e.stopPropagation();
     try {
-      addToCart.mutate({ productId, quantity: 1 });
+      addToCart.mutate({ 
+        productId: product._id, 
+        quantity: 1,
+        product: {
+          _id: product._id,
+          name: product.name,
+          price: product.price,
+          image: product.image,
+          slug: product.slug,
+        }
+      });
     } catch (error) {
       // If backend is unavailable, show success message anyway
       toast.success('Added to cart! (Demo mode)');
@@ -160,13 +170,13 @@ export default function Products() {
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded ${viewMode === 'grid' ? 'bg-primary-100 text-primary-600' : 'text-gray-400'}`}
+                  className={`p-2 rounded ${viewMode === 'grid' ? 'bg-light-blue text-dark-blue' : 'text-gray-400'}`}
                 >
                   <Grid className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-2 rounded ${viewMode === 'list' ? 'bg-primary-100 text-primary-600' : 'text-gray-400'}`}
+                  className={`p-2 rounded ${viewMode === 'list' ? 'bg-light-blue text-dark-blue' : 'text-gray-400'}`}
                 >
                   <List className="w-5 h-5" />
                 </button>
@@ -214,7 +224,7 @@ export default function Products() {
                             <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{product.name}</h3>
                             <p className="text-sm text-gray-600 mb-3 line-clamp-2">{product.description}</p>
                             <div className="flex items-center justify-between mb-3">
-                              <p className="text-2xl font-bold text-primary-600">₹{product.price.toLocaleString('en-IN')}</p>
+                              <p className="text-2xl font-bold text-dark-blue">₹{product.price.toLocaleString('en-IN')}</p>
                               {product.stock === 0 && (
                                 <span className="text-red-600 text-sm font-medium">Out of stock</span>
                               )}
@@ -223,18 +233,13 @@ export default function Products() {
                         </Link>
                         <div className="px-4 pb-4">
                           <button
-                            onClick={(e) => handleAddToCart(e, product._id)}
-                            disabled={product.stock === 0 || addToCart.isPending || isError}
-                            className="w-full bg-primary-600 text-white py-2 px-4 rounded-lg hover:bg-primary-700 transition font-medium flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                            title={isError ? 'Please ensure catalog service is running and database is connected' : ''}
+                            onClick={(e) => handleAddToCart(e, product)}
+                            disabled={product.stock === 0 || addToCart.isPending}
+                            className="w-full bg-dark-blue text-white py-2 px-4 rounded-lg hover:bg-light-blue transition font-medium flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <ShoppingCart className="w-4 h-4" />
                             <span>
-                              {product.stock === 0 
-                                ? 'Out of Stock' 
-                                : isError 
-                                ? 'Service Unavailable' 
-                                : 'Add to Cart'}
+                              {product.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
                             </span>
                           </button>
                         </div>

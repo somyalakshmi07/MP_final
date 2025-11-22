@@ -26,9 +26,15 @@ export const getCart = async (req: AuthRequest, res: Response): Promise<void> =>
 
     const cart = JSON.parse(cartData);
     
-    // Fetch product details
+    // Fetch product details (only if not already stored)
     const itemsWithDetails = await Promise.all(
       cart.items.map(async (item: any) => {
+        // If item already has complete product details, use them
+        if (item.product && item.product.name && item.product.price) {
+          return item;
+        }
+        
+        // Otherwise try to fetch product details
         try {
           const catalogUrl = process.env.CATALOG_SERVICE_URL || 'http://catalog-service:3002';
           const productResponse = await axios.get(
@@ -39,19 +45,30 @@ export const getCart = async (req: AuthRequest, res: Response): Promise<void> =>
             }
           );
           
-          if (productResponse.status === 200) {
-            return {
+          if (productResponse.status === 200 && productResponse.data?._id) {
+            // Update the cart item with product details for future use
+            const updatedItem = {
               ...item,
               product: productResponse.data,
+              price: productResponse.data.price || item.price || 0,
             };
+            
+            // Update cart in Redis with product details
+            const itemIndex = cart.items.findIndex((i: any) => i.productId === item.productId);
+            if (itemIndex >= 0) {
+              cart.items[itemIndex] = updatedItem;
+              await redis.setex(cartKey, CART_TTL, JSON.stringify(cart));
+            }
+            
+            return updatedItem;
           }
           
-          // If product not found, return item without product details
+          // If product not found, return item with existing details
           console.warn(`Product not found for cart item: ${item.productId}`);
           return item;
         } catch (error: any) {
           console.error(`Error fetching product ${item.productId}:`, error.message);
-          // Return item without product details on error
+          // Return item with existing details on error
           return item;
         }
       })
@@ -88,72 +105,46 @@ export const addToCart = async (req: AuthRequest, res: Response): Promise<void> 
       res.status(400).json({ error: 'User or guest ID required' });
       return;
     }
-    const { productId, quantity } = validation.data;
+    const { productId, quantity, product: providedProduct } = validation.data;
 
-    // Fetch product details
-    let product;
-    try {
-      const catalogUrl = process.env.CATALOG_SERVICE_URL || 'http://catalog-service:3002';
-      const productResponse = await axios.get(
-        `${catalogUrl}/products/${productId}`,
-        {
-          timeout: 5000,
-          validateStatus: (status) => status < 500, // Don't throw on 404
+    // Use provided product details if available, otherwise fetch from catalog
+    let product = providedProduct || null;
+    let productPrice = providedProduct?.price || 0;
+    
+    // If product details not provided, try to fetch from catalog
+    if (!product || !product.name) {
+      try {
+        const catalogUrl = process.env.CATALOG_SERVICE_URL || 'http://catalog-service:3002';
+        const productResponse = await axios.get(
+          `${catalogUrl}/products/${productId}`,
+          {
+            timeout: 5000,
+            validateStatus: (status) => status < 500, // Don't throw on 404
+          }
+        );
+        
+        if (productResponse.status === 200 && productResponse.data?._id) {
+          const fetchedProduct = productResponse.data;
+          product = fetchedProduct;
+          productPrice = fetchedProduct.price || 0;
+          console.log(`Successfully fetched product ${productId}:`, fetchedProduct.name);
+        } else {
+          console.warn(`Product ${productId} not found in catalog, using provided details or defaults`);
         }
-      );
-      
-      if (productResponse.status === 404) {
-        console.error(`Product not found: ${productId} from ${catalogUrl}/products/${productId}`);
-        res.status(404).json({ error: 'Product not found', productId });
-        return;
+      } catch (error: any) {
+        // Log but don't fail - use provided product details or continue without
+        console.warn(`Could not fetch product ${productId} from catalog service:`, error.message);
+        // Use provided product details if available
+        if (providedProduct) {
+          product = providedProduct;
+          productPrice = providedProduct.price || 0;
+        }
       }
-      
-      if (productResponse.status !== 200) {
-        console.error(`Catalog service error: ${productResponse.status}`, productResponse.data);
-        res.status(productResponse.status).json({ 
-          error: 'Failed to fetch product details',
-          details: productResponse.data 
-        });
-        return;
-      }
-      
-      if (!productResponse.data || !productResponse.data._id) {
-        console.error(`Invalid product response for ${productId}:`, productResponse.data);
-        res.status(404).json({ error: 'Product not found - invalid response', productId });
-        return;
-      }
-      
-      product = productResponse.data;
-      console.log(`Successfully fetched product ${productId}:`, product.name);
-    } catch (error: any) {
-      console.error('Error fetching product from catalog service:', {
-        productId,
-        error: error.message,
-        code: error.code,
-        response: error.response?.data,
-        status: error.response?.status,
-        catalogUrl: process.env.CATALOG_SERVICE_URL || 'http://catalog-service:3002',
-      });
-      
-      if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
-        res.status(503).json({ 
-          error: 'Catalog service unavailable. Please ensure catalog-service is running.',
-          productId 
-        });
-        return;
-      }
-      
-      if (error.response?.status === 404) {
-        res.status(404).json({ error: 'Product not found', productId });
-        return;
-      }
-      
-      res.status(500).json({ 
-        error: 'Failed to fetch product details',
-        productId,
-        details: error.message 
-      });
-      return;
+    } else if (providedProduct && providedProduct.name) {
+      // Use provided product details
+      product = providedProduct;
+      productPrice = providedProduct.price || 0;
+      console.log(`Using provided product details for ${productId}:`, providedProduct.name);
     }
 
     const cartKey = req.user ? getCartKey(userId) : getGuestCartKey(userId);
@@ -167,34 +158,65 @@ export const addToCart = async (req: AuthRequest, res: Response): Promise<void> 
 
     if (existingItemIndex >= 0) {
       cart.items[existingItemIndex].quantity += quantity;
+      // Update product details if provided and not already set
+      if (product && !cart.items[existingItemIndex].product) {
+        cart.items[existingItemIndex].product = product;
+        cart.items[existingItemIndex].price = productPrice;
+      }
     } else {
       cart.items.push({
         productId,
         quantity,
-        price: product.price,
+        price: productPrice,
+        product: product || undefined,
         addedAt: new Date().toISOString(),
       });
     }
 
     await redis.setex(cartKey, CART_TTL, JSON.stringify(cart));
 
-    // Return updated cart
+    // Return updated cart with product details
     const updatedCart = await redis.get(cartKey);
     const parsedCart = JSON.parse(updatedCart || '{"items":[]}');
     
     const itemsWithDetails = await Promise.all(
       parsedCart.items.map(async (item: any) => {
-        try {
-          const productResponse = await axios.get(
-            `${process.env.CATALOG_SERVICE_URL || 'http://catalog-service:3002'}/products/${item.productId}`
-          );
-          return {
-            ...item,
-            product: productResponse.data,
-          };
-        } catch (error) {
+        // If item already has product details, use them
+        if (item.product && item.product.name) {
           return item;
         }
+        
+        // If this is the item we just added and we have product details, use them
+        if (item.productId === productId && product) {
+          return {
+            ...item,
+            product: product,
+          };
+        }
+        
+        // Otherwise try to fetch product details
+        try {
+          const catalogUrl = process.env.CATALOG_SERVICE_URL || 'http://catalog-service:3002';
+          const productResponse = await axios.get(
+            `${catalogUrl}/products/${item.productId}`,
+            {
+              timeout: 3000,
+              validateStatus: (status) => status < 500,
+            }
+          );
+          
+          if (productResponse.status === 200 && productResponse.data?._id) {
+            return {
+              ...item,
+              product: productResponse.data,
+            };
+          }
+        } catch (error: any) {
+          // Silently fail - return item with existing details
+        }
+        
+        // Return item (may have product details from storage or may not)
+        return item;
       })
     );
 
@@ -246,7 +268,48 @@ export const updateCartItem = async (req: AuthRequest, res: Response): Promise<v
     cart.items[itemIndex].quantity = quantity;
     await redis.setex(cartKey, CART_TTL, JSON.stringify(cart));
 
-    res.json({ message: 'Cart updated', cart });
+    // Return updated cart with product details
+    const updatedCartData = await redis.get(cartKey);
+    const parsedCart = JSON.parse(updatedCartData || '{"items":[]}');
+    
+    const itemsWithDetails = await Promise.all(
+      parsedCart.items.map(async (item: any) => {
+        // If item already has product details, use them
+        if (item.product && item.product.name) {
+          return item;
+        }
+        
+        // Try to fetch product details
+        try {
+          const catalogUrl = process.env.CATALOG_SERVICE_URL || 'http://catalog-service:3002';
+          const productResponse = await axios.get(
+            `${catalogUrl}/products/${item.productId}`,
+            {
+              timeout: 3000,
+              validateStatus: (status) => status < 500,
+            }
+          );
+          
+          if (productResponse.status === 200 && productResponse.data?._id) {
+            return {
+              ...item,
+              product: productResponse.data,
+            };
+          }
+        } catch (error: any) {
+          // Silently fail
+        }
+        
+        return item;
+      })
+    );
+
+    const total = itemsWithDetails.reduce(
+      (sum: number, item: any) => sum + item.quantity * (item.product?.price || item.price || 0),
+      0
+    );
+
+    res.json({ message: 'Cart updated', items: itemsWithDetails, total, guestId: req.guestId });
   } catch (error) {
     console.error('Update cart error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -274,11 +337,54 @@ export const removeFromCart = async (req: AuthRequest, res: Response): Promise<v
 
     if (cart.items.length === 0) {
       await redis.del(cartKey);
-    } else {
-      await redis.setex(cartKey, CART_TTL, JSON.stringify(cart));
+      res.json({ message: 'Item removed from cart', items: [], total: 0, guestId: req.guestId });
+      return;
     }
+    
+    await redis.setex(cartKey, CART_TTL, JSON.stringify(cart));
 
-    res.json({ message: 'Item removed from cart', cart });
+    // Return updated cart with product details
+    const updatedCartData = await redis.get(cartKey);
+    const parsedCart = JSON.parse(updatedCartData || '{"items":[]}');
+    
+    const itemsWithDetails = await Promise.all(
+      parsedCart.items.map(async (item: any) => {
+        // If item already has product details, use them
+        if (item.product && item.product.name) {
+          return item;
+        }
+        
+        // Try to fetch product details
+        try {
+          const catalogUrl = process.env.CATALOG_SERVICE_URL || 'http://catalog-service:3002';
+          const productResponse = await axios.get(
+            `${catalogUrl}/products/${item.productId}`,
+            {
+              timeout: 3000,
+              validateStatus: (status) => status < 500,
+            }
+          );
+          
+          if (productResponse.status === 200 && productResponse.data?._id) {
+            return {
+              ...item,
+              product: productResponse.data,
+            };
+          }
+        } catch (error: any) {
+          // Silently fail
+        }
+        
+        return item;
+      })
+    );
+
+    const total = itemsWithDetails.reduce(
+      (sum: number, item: any) => sum + item.quantity * (item.product?.price || item.price || 0),
+      0
+    );
+
+    res.json({ message: 'Item removed from cart', items: itemsWithDetails, total, guestId: req.guestId });
   } catch (error) {
     console.error('Remove from cart error:', error);
     res.status(500).json({ error: 'Internal server error' });

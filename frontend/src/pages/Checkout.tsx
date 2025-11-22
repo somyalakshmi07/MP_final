@@ -212,7 +212,7 @@ export default function Checkout() {
             <button
               type="submit"
               disabled={createOrder.isPending || processPayment.isPending}
-              className="w-full bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition disabled:opacity-50"
+              className="w-full bg-dark-blue text-white px-6 py-3 rounded-lg hover:bg-light-blue transition disabled:opacity-50"
             >
               {createOrder.isPending || processPayment.isPending
                 ? 'Processing...'

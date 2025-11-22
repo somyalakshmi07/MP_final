@@ -9,7 +9,7 @@ export default function OrderConfirmation() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-dark-blue"></div>
       </div>
     );
   }
@@ -19,7 +19,7 @@ export default function OrderConfirmation() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600 mb-4">Order not found</p>
-          <Link to="/orders" className="text-primary-600 hover:text-primary-700">
+          <Link to="/orders" className="text-dark-blue hover:text-light-blue">
             View All Orders
           </Link>
         </div>
@@ -59,7 +59,7 @@ export default function OrderConfirmation() {
               {/* Order Status */}
               <div className="bg-gray-50 rounded-lg p-6">
                 <div className="flex items-center mb-4">
-                  <Package className="w-6 h-6 text-primary-600 mr-2" />
+                  <Package className="w-6 h-6 text-dark-blue mr-2" />
                   <h3 className="font-semibold text-gray-900">Order Status</h3>
                 </div>
                 <p className={`text-lg font-bold ${
@@ -74,7 +74,7 @@ export default function OrderConfirmation() {
               {/* Payment Status */}
               <div className="bg-gray-50 rounded-lg p-6">
                 <div className="flex items-center mb-4">
-                  <CreditCard className="w-6 h-6 text-primary-600 mr-2" />
+                  <CreditCard className="w-6 h-6 text-dark-blue mr-2" />
                   <h3 className="font-semibold text-gray-900">Payment Status</h3>
                 </div>
                 <p className={`text-lg font-bold ${
@@ -116,7 +116,7 @@ export default function OrderConfirmation() {
             {/* Shipping Address */}
             <div className="mb-8">
               <div className="flex items-center mb-4">
-                <MapPin className="w-6 h-6 text-primary-600 mr-2" />
+                <MapPin className="w-6 h-6 text-dark-blue mr-2" />
                 <h3 className="text-xl font-bold text-gray-900">Shipping Address</h3>
               </div>
               <div className="bg-gray-50 rounded-lg p-6">
@@ -133,7 +133,7 @@ export default function OrderConfirmation() {
             <div className="border-t pt-6 mb-8">
               <div className="flex justify-between items-center">
                 <span className="text-2xl font-bold text-gray-900">Total</span>
-                <span className="text-3xl font-bold text-primary-600">₹{order.total.toLocaleString('en-IN')}</span>
+                <span className="text-3xl font-bold text-dark-blue">₹{order.total.toLocaleString('en-IN')}</span>
               </div>
             </div>
 
@@ -141,7 +141,7 @@ export default function OrderConfirmation() {
             <div className="flex flex-col sm:flex-row gap-4">
               <Link
                 to="/orders"
-                className="flex-1 bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition text-center font-semibold"
+                className="flex-1 bg-dark-blue text-white px-6 py-3 rounded-lg hover:bg-light-blue transition text-center font-semibold"
               >
                 View All Orders
               </Link>

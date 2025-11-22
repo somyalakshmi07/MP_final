@@ -26,7 +26,7 @@ export default function Cart() {
           <p className="text-gray-600 mb-4">Your cart is empty</p>
           <Link
             to="/products"
-            className="text-primary-600 hover:text-primary-700 font-medium"
+            className="text-dark-blue hover:text-light-blue font-medium"
           >
             Continue Shopping
           </Link>
@@ -80,11 +80,11 @@ export default function Cart() {
                   </Link>
                   <div className="flex-1 min-w-0">
                     <Link to={`/products/${item.product?.slug || item.productId}`}>
-                      <h3 className="font-semibold text-gray-900 mb-1 hover:text-primary-600">
+                      <h3 className="font-semibold text-black mb-1 hover:text-dark-blue">
                         {item.product?.name || 'Product'}
                       </h3>
                     </Link>
-                    <p className="text-lg font-bold text-primary-600 mb-3">
+                    <p className="text-lg font-bold text-dark-blue mb-3">
                       ₹{itemPrice.toLocaleString('en-IN')}
                     </p>
                     <div className="flex items-center gap-4">
@@ -158,19 +158,19 @@ export default function Cart() {
               <div className="border-t pt-3 mt-3">
                 <div className="flex justify-between font-bold text-lg">
                   <span>Total</span>
-                  <span className="text-primary-600">₹{totalAmount.toLocaleString('en-IN')}</span>
+                  <span className="text-dark-blue">₹{totalAmount.toLocaleString('en-IN')}</span>
                 </div>
               </div>
             </div>
             <Link
               to="/checkout"
-              className="block w-full bg-primary-600 text-white text-center px-6 py-3 rounded-lg hover:bg-primary-700 transition font-medium"
+              className="block w-full bg-dark-blue text-white text-center px-6 py-3 rounded-lg hover:bg-light-blue transition font-medium"
             >
               Proceed to Checkout
             </Link>
             <Link
               to="/products"
-              className="block w-full text-center px-6 py-3 mt-3 text-gray-700 hover:text-primary-600 transition font-medium"
+              className="block w-full text-center px-6 py-3 mt-3 text-black hover:text-dark-blue transition font-medium"
             >
               Continue Shopping
             </Link>

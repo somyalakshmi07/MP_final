@@ -42,7 +42,7 @@ export default function AdminCategories() {
         <h1 className="text-3xl font-bold text-gray-900">Categories</h1>
         <button
           onClick={() => setShowForm(true)}
-          className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700"
+          className="bg-dark-blue text-white px-4 py-2 rounded-lg hover:bg-light-blue"
         >
           Add Category
         </button>
@@ -82,7 +82,7 @@ export default function AdminCategories() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
+                  className="px-4 py-2 bg-dark-blue text-white rounded-md hover:bg-light-blue"
                 >
                   Create
                 </button>

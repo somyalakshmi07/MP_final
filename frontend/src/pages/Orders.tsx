@@ -20,7 +20,7 @@ export default function Orders() {
           <p className="text-gray-600 mb-4">You have no orders yet</p>
           <Link
             to="/products"
-            className="text-primary-600 hover:text-primary-700 font-medium"
+            className="text-dark-blue hover:text-light-blue font-medium"
           >
             Start Shopping
           </Link>

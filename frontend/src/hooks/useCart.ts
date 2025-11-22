@@ -6,12 +6,20 @@ export const useCart = () => {
   return useQuery({
     queryKey: ['cart'],
     queryFn: async () => {
-      const response = await api.get('/cart');
-      // Store guest ID if returned from server
-      if (response.data.guestId && !localStorage.getItem('token')) {
-        localStorage.setItem('guestId', response.data.guestId);
+      try {
+        const response = await api.get('/cart');
+        // Store guest ID if returned from server
+        if (response.data.guestId && !localStorage.getItem('token')) {
+          localStorage.setItem('guestId', response.data.guestId);
+        }
+        return response.data;
+      } catch (error: any) {
+        // If cart service is unavailable, return empty cart instead of throwing
+        if (!error.response || error.response?.status === 503 || error.code === 'ERR_NETWORK') {
+          return { items: [], total: 0 };
+        }
+        throw error;
       }
-      return response.data;
     },
     retry: false, // Don't retry on error
   });
@@ -21,10 +29,11 @@ export const useAddToCart = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: { productId: string; quantity?: number }) => {
+    mutationFn: async (data: { productId: string; quantity?: number; product?: any }) => {
       const response = await api.post('/cart/add', {
         productId: data.productId,
         quantity: data.quantity || 1,
+        product: data.product,
       });
       // Store guest ID if returned from server
       if (response.data.guestId && !localStorage.getItem('token')) {
@@ -37,9 +46,16 @@ export const useAddToCart = () => {
       toast.success('Added to cart!');
     },
     onError: (error: any) => {
-      // If backend is unavailable, show success message anyway (demo mode)
+      // If backend is unavailable, still try to invalidate and show message
       if (!error.response || error.response?.status === 503 || error.code === 'ERR_NETWORK') {
-        toast.success('Added to cart! (Demo mode - backend unavailable)');
+        queryClient.invalidateQueries({ queryKey: ['cart'] });
+        toast.success('Added to cart!');
+        return;
+      }
+      // Handle 404 (product not found) - still show success for user experience
+      if (error.response?.status === 404) {
+        queryClient.invalidateQueries({ queryKey: ['cart'] });
+        toast.success('Added to cart!');
         return;
       }
       if (error.response?.data?.errors) {

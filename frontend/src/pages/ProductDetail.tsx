@@ -14,7 +14,18 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
 
   const handleAddToCart = () => {
-    addToCart.mutate({ productId: product?._id || '', quantity });
+    if (!product) return;
+    addToCart.mutate({ 
+      productId: product._id, 
+      quantity,
+      product: {
+        _id: product._id,
+        name: product.name,
+        price: product.price,
+        image: product.image,
+        slug: product.slug,
+      }
+    });
   };
 
   if (isLoading) {
@@ -41,7 +52,7 @@ export default function ProductDetail() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <button
         onClick={() => navigate(-1)}
-        className="mb-6 text-gray-600 hover:text-primary-600 flex items-center space-x-2"
+        className="mb-6 text-black/70 hover:text-dark-blue flex items-center space-x-2"
       >
         <ArrowLeft className="w-5 h-5" />
         <span>Back</span>
@@ -57,12 +68,12 @@ export default function ProductDetail() {
         </div>
         <div>
           <div className="mb-4">
-            <span className="inline-block px-3 py-1 bg-primary-100 text-primary-800 rounded-full text-sm font-medium">
+            <span className="inline-block px-3 py-1 bg-light-blue text-dark-blue rounded-full text-sm font-medium">
               {product.category?.name}
             </span>
           </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-4">{product.name}</h1>
-          <p className="text-4xl font-bold text-primary-600 mb-6">
+          <p className="text-4xl font-bold text-dark-blue mb-6">
             ₹{product.price.toLocaleString('en-IN')}
           </p>
           <p className="text-gray-600 mb-8 leading-relaxed">{product.description}</p>
@@ -106,7 +117,7 @@ export default function ProductDetail() {
               <button
                 onClick={handleAddToCart}
                 disabled={addToCart.isPending}
-                className="w-full bg-primary-600 text-white px-6 py-4 rounded-lg hover:bg-primary-700 transition disabled:opacity-50 disabled:cursor-not-allowed font-semibold flex items-center justify-center space-x-2"
+                className="w-full bg-dark-blue text-white px-6 py-4 rounded-lg hover:bg-light-blue transition disabled:opacity-50 disabled:cursor-not-allowed font-semibold flex items-center justify-center space-x-2"
               >
                 {addToCart.isPending ? (
                   <>

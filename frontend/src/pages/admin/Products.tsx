@@ -52,7 +52,7 @@ export default function AdminProducts() {
             setEditingProduct(null);
             setShowForm(true);
           }}
-          className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700"
+          className="bg-dark-blue text-white px-4 py-2 rounded-lg hover:bg-light-blue"
         >
           Add Product
         </button>
@@ -116,7 +116,7 @@ export default function AdminProducts() {
                         setEditingProduct(product);
                         setShowForm(true);
                       }}
-                      className="text-primary-600 hover:text-primary-900 mr-4"
+                      className="text-dark-blue hover:text-light-blue mr-4"
                     >
                       Edit
                     </button>
@@ -297,7 +297,7 @@ function ProductForm({
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
+              className="px-4 py-2 bg-dark-blue text-white rounded-md hover:bg-light-blue"
             >
               {product ? 'Update' : 'Create'}
             </button>
