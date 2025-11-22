@@ -1,0 +1,25 @@
+{
+  "name": "website-ecom",
+  "version": "1.0.0",
+  "description": "A complete, production-ready e-commerce platform built with microservices architecture, designed for deployment on Azure AKS.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/somyalakshmi07/MP_final.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/somyalakshmi07/MP_final/issues"
+  },
+  "homepage": "https://github.com/somyalakshmi07/MP_final#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "mongoose": "^9.0.0"
+  }
+}

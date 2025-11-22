@@ -107,14 +107,24 @@ export const useRegister = () => {
       toast.success('Account created successfully! Please login to continue.');
     },
     onError: (error: any) => {
+      // Handle validation errors (400)
       if (error.response?.data?.errors) {
         Object.values(error.response.data.errors).forEach((msg: any) => {
           toast.error(msg);
         });
-      } else if (error.response?.status === 0 || error.code === 'ERR_NETWORK' || !error.response) {
-        toast.error('Service unavailable. Please ensure all backend services are running.');
-      } else {
-        toast.error(error.response?.data?.error || 'Registration failed');
+      } 
+      // Handle network/connection errors
+      else if (error.response?.status === 0 || error.code === 'ERR_NETWORK' || !error.response) {
+        toast.error('Cannot connect to server. Please check:\n1. Backend services are running\n2. Cosmos DB connection string has correct password\n3. Network connection is active');
+      }
+      // Handle service unavailable (503)
+      else if (error.response?.status === 503 || error.response?.status === 500) {
+        const errorMsg = error.response?.data?.error || 'Service unavailable';
+        toast.error(`${errorMsg}\n\nCheck: Backend services and Cosmos DB connection`);
+      }
+      // Handle other errors
+      else {
+        toast.error(error.response?.data?.error || 'Registration failed. Please try again.');
       }
     },
   });

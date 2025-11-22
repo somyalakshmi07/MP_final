@@ -14,10 +14,6 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
 
   const handleAddToCart = () => {
-    if (!isAuthenticated()) {
-      navigate('/login');
-      return;
-    }
     addToCart.mutate({ productId: product?._id || '', quantity });
   };
 
@@ -67,7 +63,7 @@ export default function ProductDetail() {
           </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-4">{product.name}</h1>
           <p className="text-4xl font-bold text-primary-600 mb-6">
-            ${product.price.toFixed(2)}
+            ₹{product.price.toLocaleString('en-IN')}
           </p>
           <p className="text-gray-600 mb-8 leading-relaxed">{product.description}</p>
           

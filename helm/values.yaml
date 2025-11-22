@@ -9,9 +9,9 @@ jwtSecret:
   name: jwt-secret
   key: secret
 
-# MongoDB Atlas (external)
+# Azure Cosmos DB (MongoDB API)
 mongodb:
-  uri: "mongodb+srv://somyalakshmi17_db_user:9ft7qNZWLA5IqWUd@cluster0.v1rzlcu.mongodb.net/ecommerce?retryWrites=true&w=majority&appName=ecommerce-app"
+  uri: "mongodb+srv://dbuser:Password%40123@cosmos-ecommerce.global.mongocluster.cosmos.azure.com/ecommerce?tls=true&authMechanism=SCRAM-SHA-256&retrywrites=false&maxIdleTimeMS=120000"
 
 # Redis
 redis:

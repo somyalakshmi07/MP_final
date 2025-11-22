@@ -15,6 +15,7 @@ export default function AdminProducts() {
       const response = await api.get('/admin/products');
       return response.data;
     },
+    retry: false, // Don't retry on error
   });
 
   const { data: categories } = useQuery({
@@ -23,6 +24,7 @@ export default function AdminProducts() {
       const response = await api.get('/catalog/categories');
       return response.data;
     },
+    retry: false, // Don't retry on error
   });
 
   const deleteProduct = useMutation({
@@ -106,7 +108,7 @@ export default function AdminProducts() {
                       <span className="font-medium">{product.name}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">${product.price.toFixed(2)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">₹{product.price.toLocaleString('en-IN')}</td>
                   <td className="px-6 py-4 whitespace-nowrap">{product.stock}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <button

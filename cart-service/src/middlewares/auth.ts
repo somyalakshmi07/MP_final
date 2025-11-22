@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -7,6 +8,7 @@ export interface AuthRequest extends Request {
     email: string;
     role: string;
   };
+  guestId?: string;
 }
 
 export const authenticate = (
@@ -32,5 +34,39 @@ export const authenticate = (
     next();
   } catch (error) {
     res.status(401).json({ error: 'Invalid token' });
+  }
+};
+
+// Optional auth - allows guest users with session ID
+export const optionalAuth = (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): void => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as {
+          userId: string;
+          email: string;
+          role: string;
+        };
+        req.user = decoded;
+      } catch (error) {
+        // Invalid token, continue as guest
+      }
+    }
+
+    // If no user, use guest ID from header or generate one
+    if (!req.user) {
+      const guestId = req.headers['x-guest-id'] as string || uuidv4();
+      req.guestId = guestId;
+    }
+
+    next();
+  } catch (error) {
+    next();
   }
 };

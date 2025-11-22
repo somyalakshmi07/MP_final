@@ -11,9 +11,10 @@ import { authenticate, requireAdmin } from '../middlewares/auth';
 
 const router = Router();
 
-router.get('/products', authenticate, getProducts);
-router.get('/products/:id', authenticate, getProduct);
-router.get('/categories', authenticate, getCategories);
+// Public routes - no authentication required
+router.get('/products', getProducts);
+router.get('/products/:id', getProduct);
+router.get('/categories', getCategories);
 
 router.get('/admin/products', authenticate, requireAdmin, getProducts);
 router.post('/admin/products', authenticate, requireAdmin, createProduct);

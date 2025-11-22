@@ -28,7 +28,7 @@ export const useProducts = (params?: {
       const response = await api.get('/products', { params });
       return response.data;
     },
-    enabled: !!localStorage.getItem('token'),
+    retry: false, // Don't retry on error
   });
 };
 
@@ -39,7 +39,8 @@ export const useProduct = (id: string) => {
       const response = await api.get(`/products/${id}`);
       return response.data;
     },
-    enabled: !!id && !!localStorage.getItem('token'),
+    enabled: !!id,
+    retry: false, // Don't retry on error
   });
 };
 
@@ -50,6 +51,6 @@ export const useCategories = () => {
       const response = await api.get('/categories');
       return response.data;
     },
-    enabled: !!localStorage.getItem('token'),
+    retry: false, // Don't retry on error
   });
 };

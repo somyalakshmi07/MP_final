@@ -2,19 +2,19 @@ import mongoose from 'mongoose';
 
 export const connectDB = async (): Promise<void> => {
   try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://somyalakshmi17_db_user:9ft7qNZWLA5IqWUd@cluster0.v1rzlcu.mongodb.net/ecommerce?retryWrites=true&w=majority&appName=ecommerce-app';
+    const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://dbuser:Password%40123@cosmos-ecommerce.global.mongocluster.cosmos.azure.com/?tls=true&authMechanism=SCRAM-SHA-256&retrywrites=false&maxIdleTimeMS=120000&appName=ecommerce-app';
     await mongoose.connect(mongoUri, {
-      retryWrites: true,
-      w: 'majority',
-      appName: 'ecommerce-app',
+      dbName: 'ecommerce', // Specify database name
+      retryWrites: false, // Cosmos DB requires retryWrites=false
       tls: true,
-      tlsAllowInvalidCertificates: false,
+      authMechanism: 'SCRAM-SHA-256',
+      maxIdleTimeMS: 120000,
       minPoolSize: 5,
       maxPoolSize: 20,
-    });
-    console.log('✅ Connected to MongoDB Atlas (ecommerce database)');
+    } as mongoose.ConnectOptions);
+    console.log('✅ Connected to Azure Cosmos DB (ecommerce database)');
   } catch (error) {
-    console.error('❌ MongoDB connection error:', error);
+    console.error('❌ Cosmos DB connection error:', error);
     process.exit(1);
   }
 };

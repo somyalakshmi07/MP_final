@@ -42,7 +42,7 @@ export default function OrderDetail() {
                     <h3 className="font-semibold">{item.name}</h3>
                     <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
                   </div>
-                  <p className="font-bold">${(item.price * item.quantity).toFixed(2)}</p>
+                  <p className="font-bold">₹{(item.price * item.quantity).toLocaleString('en-IN')}</p>
                 </div>
               ))}
             </div>
@@ -92,7 +92,7 @@ export default function OrderDetail() {
               </div>
               <div className="flex justify-between pt-4 border-t font-bold text-lg">
                 <span>Total</span>
-                <span>${order.total.toFixed(2)}</span>
+                <span>₹{order.total.toLocaleString('en-IN')}</span>
               </div>
             </div>
             <p className="text-sm text-gray-600 mt-4">

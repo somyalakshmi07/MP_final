@@ -7,6 +7,7 @@ export interface AuthRequest extends Request {
     email: string;
     role: string;
   };
+  guestId?: string;
 }
 
 export const authenticate = (
@@ -45,12 +46,24 @@ export const optionalAuth = (
     const token = req.headers.authorization?.split(' ')[1] || 
                   req.cookies?.token;
     if (token) {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as {
-        userId: string;
-        email: string;
-        role: string;
-      };
-      req.user = decoded;
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as {
+          userId: string;
+          email: string;
+          role: string;
+        };
+        req.user = decoded;
+      } catch (error) {
+        // Invalid token, continue as guest
+      }
+    }
+
+    // If no user, use guest ID from header
+    if (!req.user) {
+      const guestId = req.headers['x-guest-id'] as string;
+      if (guestId) {
+        req.guestId = guestId;
+      }
     }
     next();
   } catch (error) {

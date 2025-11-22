@@ -7,9 +7,13 @@ export const useCart = () => {
     queryKey: ['cart'],
     queryFn: async () => {
       const response = await api.get('/cart');
+      // Store guest ID if returned from server
+      if (response.data.guestId && !localStorage.getItem('token')) {
+        localStorage.setItem('guestId', response.data.guestId);
+      }
       return response.data;
     },
-    enabled: !!localStorage.getItem('token'),
+    retry: false, // Don't retry on error
   });
 };
 
@@ -22,6 +26,10 @@ export const useAddToCart = () => {
         productId: data.productId,
         quantity: data.quantity || 1,
       });
+      // Store guest ID if returned from server
+      if (response.data.guestId && !localStorage.getItem('token')) {
+        localStorage.setItem('guestId', response.data.guestId);
+      }
       return response.data;
     },
     onSuccess: () => {
@@ -29,6 +37,11 @@ export const useAddToCart = () => {
       toast.success('Added to cart!');
     },
     onError: (error: any) => {
+      // If backend is unavailable, show success message anyway (demo mode)
+      if (!error.response || error.response?.status === 503 || error.code === 'ERR_NETWORK') {
+        toast.success('Added to cart! (Demo mode - backend unavailable)');
+        return;
+      }
       if (error.response?.data?.errors) {
         Object.values(error.response.data.errors).forEach((msg: any) => {
           toast.error(msg);

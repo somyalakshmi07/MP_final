@@ -11,7 +11,20 @@ router.post('/auth/register', async (req: Request, res: Response) => {
     const response = await axios.post(`${services.auth}/auth/register`, req.body);
     res.json(response.data);
   } catch (error: any) {
-    res.status(error.response?.status || 500).json(error.response?.data || { error: 'Service unavailable' });
+    // Handle connection errors (auth-service not running)
+    if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+      res.status(503).json({ 
+        error: 'Auth service unavailable. Please ensure auth-service is running and can connect to Cosmos DB.' 
+      });
+      return;
+    }
+    // Handle auth-service errors
+    if (error.response?.data) {
+      res.status(error.response.status || 500).json(error.response.data);
+      return;
+    }
+    // Generic error
+    res.status(500).json({ error: 'Service unavailable. Please check backend services and database connection.' });
   }
 });
 
@@ -20,7 +33,20 @@ router.post('/auth/login', async (req: Request, res: Response) => {
     const response = await axios.post(`${services.auth}/auth/login`, req.body);
     res.json(response.data);
   } catch (error: any) {
-    res.status(error.response?.status || 500).json(error.response?.data || { error: 'Service unavailable' });
+    // Handle connection errors (auth-service not running)
+    if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+      res.status(503).json({ 
+        error: 'Auth service unavailable. Please ensure auth-service is running and can connect to Cosmos DB.' 
+      });
+      return;
+    }
+    // Handle auth-service errors
+    if (error.response?.data) {
+      res.status(error.response.status || 500).json(error.response.data);
+      return;
+    }
+    // Generic error
+    res.status(500).json({ error: 'Service unavailable. Please check backend services and database connection.' });
   }
 });
 
@@ -35,91 +61,122 @@ router.get('/auth/profile', authenticate, async (req: AuthRequest, res: Response
   }
 });
 
-// Catalog routes - require authentication
-router.get('/products', authenticate, async (req: AuthRequest, res: Response) => {
+// Catalog routes - public access (no authentication required)
+router.get('/products', optionalAuth, async (req: AuthRequest, res: Response) => {
   try {
     const query = new URLSearchParams(req.query as any).toString();
-    const response = await axios.get(`${services.catalog}/products?${query}`, {
-      headers: { Authorization: req.headers.authorization },
-    });
+    const headers: any = {};
+    if (req.headers.authorization) {
+      headers.Authorization = req.headers.authorization;
+    }
+    const response = await axios.get(`${services.catalog}/products?${query}`, { headers });
     res.json(response.data);
   } catch (error: any) {
     res.status(error.response?.status || 500).json(error.response?.data || { error: 'Service unavailable' });
   }
 });
 
-router.get('/products/:id', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/products/:id', optionalAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const response = await axios.get(`${services.catalog}/products/${req.params.id}`, {
-      headers: { Authorization: req.headers.authorization },
-    });
+    const headers: any = {};
+    if (req.headers.authorization) {
+      headers.Authorization = req.headers.authorization;
+    }
+    const response = await axios.get(`${services.catalog}/products/${req.params.id}`, { headers });
     res.json(response.data);
   } catch (error: any) {
     res.status(error.response?.status || 500).json(error.response?.data || { error: 'Service unavailable' });
   }
 });
 
-router.get('/categories', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/categories', optionalAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const response = await axios.get(`${services.catalog}/categories`, {
-      headers: { Authorization: req.headers.authorization },
-    });
+    const headers: any = {};
+    if (req.headers.authorization) {
+      headers.Authorization = req.headers.authorization;
+    }
+    const response = await axios.get(`${services.catalog}/categories`, { headers });
     res.json(response.data);
   } catch (error: any) {
     res.status(error.response?.status || 500).json(error.response?.data || { error: 'Service unavailable' });
   }
 });
 
-// Cart routes - require authentication
-router.get('/cart', authenticate, async (req: AuthRequest, res: Response) => {
+// Cart routes - optional authentication (supports guest carts)
+router.get('/cart', optionalAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const response = await axios.get(`${services.cart}/cart`, {
-      headers: { Authorization: req.headers.authorization },
-    });
+    const headers: any = {};
+    if (req.headers.authorization) {
+      headers.Authorization = req.headers.authorization;
+    }
+    if (req.guestId || req.headers['x-guest-id']) {
+      headers['x-guest-id'] = req.guestId || req.headers['x-guest-id'];
+    }
+    const response = await axios.get(`${services.cart}/cart`, { headers });
     res.json(response.data);
   } catch (error: any) {
     res.status(error.response?.status || 500).json(error.response?.data || { error: 'Service unavailable' });
   }
 });
 
-router.post('/cart/add', authenticate, async (req: AuthRequest, res: Response) => {
+router.post('/cart/add', optionalAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const response = await axios.post(`${services.cart}/cart/add`, req.body, {
-      headers: { Authorization: req.headers.authorization },
-    });
+    const headers: any = {};
+    if (req.headers.authorization) {
+      headers.Authorization = req.headers.authorization;
+    }
+    if (req.guestId || req.headers['x-guest-id']) {
+      headers['x-guest-id'] = req.guestId || req.headers['x-guest-id'];
+    }
+    const response = await axios.post(`${services.cart}/cart/add`, req.body, { headers });
     res.json(response.data);
   } catch (error: any) {
     res.status(error.response?.status || 500).json(error.response?.data || { error: 'Service unavailable' });
   }
 });
 
-router.put('/cart/:productId', authenticate, async (req: AuthRequest, res: Response) => {
+router.put('/cart/:productId', optionalAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const response = await axios.put(`${services.cart}/cart/${req.params.productId}`, req.body, {
-      headers: { Authorization: req.headers.authorization },
-    });
+    const headers: any = {};
+    if (req.headers.authorization) {
+      headers.Authorization = req.headers.authorization;
+    }
+    if (req.guestId || req.headers['x-guest-id']) {
+      headers['x-guest-id'] = req.guestId || req.headers['x-guest-id'];
+    }
+    const response = await axios.put(`${services.cart}/cart/${req.params.productId}`, req.body, { headers });
     res.json(response.data);
   } catch (error: any) {
     res.status(error.response?.status || 500).json(error.response?.data || { error: 'Service unavailable' });
   }
 });
 
-router.delete('/cart/:productId', authenticate, async (req: AuthRequest, res: Response) => {
+router.delete('/cart/:productId', optionalAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const response = await axios.delete(`${services.cart}/cart/${req.params.productId}`, {
-      headers: { Authorization: req.headers.authorization },
-    });
+    const headers: any = {};
+    if (req.headers.authorization) {
+      headers.Authorization = req.headers.authorization;
+    }
+    if (req.guestId || req.headers['x-guest-id']) {
+      headers['x-guest-id'] = req.guestId || req.headers['x-guest-id'];
+    }
+    const response = await axios.delete(`${services.cart}/cart/${req.params.productId}`, { headers });
     res.json(response.data);
   } catch (error: any) {
     res.status(error.response?.status || 500).json(error.response?.data || { error: 'Service unavailable' });
   }
 });
 
-router.delete('/cart', authenticate, async (req: AuthRequest, res: Response) => {
+router.delete('/cart', optionalAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const response = await axios.delete(`${services.cart}/cart`, {
-      headers: { Authorization: req.headers.authorization },
-    });
+    const headers: any = {};
+    if (req.headers.authorization) {
+      headers.Authorization = req.headers.authorization;
+    }
+    if (req.guestId || req.headers['x-guest-id']) {
+      headers['x-guest-id'] = req.guestId || req.headers['x-guest-id'];
+    }
+    const response = await axios.delete(`${services.cart}/cart`, { headers });
     res.json(response.data);
   } catch (error: any) {
     res.status(error.response?.status || 500).json(error.response?.data || { error: 'Service unavailable' });

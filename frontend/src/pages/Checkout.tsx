@@ -230,14 +230,14 @@ export default function Checkout() {
                     {item.product?.name || 'Product'} x {item.quantity}
                   </span>
                   <span>
-                    ${((item.product?.price || item.price || 0) * item.quantity).toFixed(2)}
+                    ₹{((item.product?.price || item.price || 0) * item.quantity).toLocaleString('en-IN')}
                   </span>
                 </div>
               ))}
             </div>
             <div className="flex justify-between font-bold text-lg pt-4 border-t">
               <span>Total</span>
-              <span>${cart.total?.toFixed(2) || '0.00'}</span>
+              <span>₹{(cart.total || 0).toLocaleString('en-IN')}</span>
             </div>
           </div>
         </div>

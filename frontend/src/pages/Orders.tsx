@@ -42,7 +42,7 @@ export default function Orders() {
                   <p className="text-sm text-gray-600">{order.items.length} items</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-lg">${order.total.toFixed(2)}</p>
+                  <p className="font-bold text-lg">₹{order.total.toLocaleString('en-IN')}</p>
                   <span
                     className={`inline-block px-2 py-1 rounded text-xs ${
                       order.status === 'Completed'

@@ -6,14 +6,14 @@ import {
   removeFromCart,
   clearCart,
 } from '../controllers/cartController';
-import { authenticate } from '../middlewares/auth';
+import { optionalAuth } from '../middlewares/auth';
 
 const router = Router();
 
-router.get('/cart', authenticate, getCart);
-router.post('/cart/add', authenticate, addToCart);
-router.put('/cart/:productId', authenticate, updateCartItem);
-router.delete('/cart/:productId', authenticate, removeFromCart);
-router.delete('/cart', authenticate, clearCart);
+router.get('/cart', optionalAuth, getCart);
+router.post('/cart/add', optionalAuth, addToCart);
+router.put('/cart/:productId', optionalAuth, updateCartItem);
+router.delete('/cart/:productId', optionalAuth, removeFromCart);
+router.delete('/cart', optionalAuth, clearCart);
 
 export default router;

@@ -106,7 +106,7 @@ export default function OrderConfirmation() {
                       <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
                     </div>
                     <p className="text-lg font-bold text-gray-900">
-                      ${(item.price * item.quantity).toFixed(2)}
+                      ₹{(item.price * item.quantity).toLocaleString('en-IN')}
                     </p>
                   </div>
                 ))}
@@ -133,7 +133,7 @@ export default function OrderConfirmation() {
             <div className="border-t pt-6 mb-8">
               <div className="flex justify-between items-center">
                 <span className="text-2xl font-bold text-gray-900">Total</span>
-                <span className="text-3xl font-bold text-primary-600">${order.total.toFixed(2)}</span>
+                <span className="text-3xl font-bold text-primary-600">₹{order.total.toLocaleString('en-IN')}</span>
               </div>
             </div>
 

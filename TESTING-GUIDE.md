@@ -484,6 +484,30 @@ curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
 
 Get JWT token from browser localStorage after login, or from login API response.
 
+### Product Catalog API (Gateway → Catalog Service)
+
+**TC_PC_01 – Unauthorized Access**
+```bash
+curl -i http://localhost:3000/api/products
+```
+- Expected: `401 Unauthorized`
+- Body: `{ "error": "Unauthorized" }`
+- Confirms gateway requires JWT before proxying to catalog-service.
+
+**TC_PC_02 – Authorized Access**
+```bash
+curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  http://localhost:3000/api/products
+```
+- Expected: `200 OK`
+- Body: `{ "products": [ ...seededProducts ], "pagination": { ... } }`
+- Response should include every seeded category (Electronics, Fashion & Apparel, Home & Kitchen, Beauty & Personal Care, Sports & Outdoors, Books, Toys & Games, Grocery & Gourmet).
+
+If the authorized call fails, check:
+- JWT token validity (not expired, correct secret)
+- `gateway-service` `.env` → `CATALOG_SERVICE_URL`
+- `catalog-service` MongoDB connection and logs
+
 ---
 
 ## Automated Testing (Future)

@@ -1,17 +1,24 @@
-# MongoDB Atlas (Live Cluster)
+# ⚠️ DEPRECATED: MongoDB Atlas
 
-We are using a real MongoDB Atlas M0 free cluster:
+**This file is deprecated. We now use Azure Cosmos DB.**
+
+See [README-COSMOS-DB.md](./README-COSMOS-DB.md) for current database configuration.
+
+---
+
+# MongoDB Atlas (Legacy - No Longer Used)
+
+~~We were using a real MongoDB Atlas M0 free cluster:~~
 
 ```
 mongodb+srv://somyalakshmi17_db_user:9ft7qNZWLA5IqWUd@cluster0.v1rzlcu.mongodb.net/ecommerce
 ```
 
-## Connection Details
+## Migration Notice
 
-- **Cluster**: cluster0.v1rzlcu.mongodb.net
-- **Database**: ecommerce
-- **Username**: somyalakshmi17_db_user
-- **Connection String**: `mongodb+srv://somyalakshmi17_db_user:9ft7qNZWLA5IqWUd@cluster0.v1rzlcu.mongodb.net/ecommerce?retryWrites=true&w=majority&appName=ecommerce-app`
+**We have migrated to Azure Cosmos DB (MongoDB API).**
+
+Please refer to [README-COSMOS-DB.md](./README-COSMOS-DB.md) for the current database setup and connection details.
 
 ## Collections
 

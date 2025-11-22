@@ -55,9 +55,25 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         role: user.role,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Register error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    
+    // Check for database connection errors
+    if (error.name === 'MongoServerError' || error.name === 'MongooseError' || error.message?.includes('connection')) {
+      res.status(503).json({ 
+        error: 'Database connection failed. Please check Cosmos DB connection string and ensure the password is correctly set (not <password> placeholder).' 
+      });
+      return;
+    }
+    
+    // Check for duplicate key errors
+    if (error.code === 11000) {
+      res.status(400).json({ errors: { email: 'User already exists' } });
+      return;
+    }
+    
+    // Generic error
+    res.status(500).json({ error: 'Internal server error. Please try again later.' });
   }
 };
 

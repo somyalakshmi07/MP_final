@@ -13,6 +13,7 @@ export default function AdminCategories() {
       const response = await api.get('/catalog/categories');
       return response.data;
     },
+    retry: false, // Don't retry on error
   });
 
   const createCategory = useMutation({

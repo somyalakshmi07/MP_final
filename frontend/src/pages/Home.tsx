@@ -77,7 +77,7 @@ export default function Home() {
                 <div className="p-4">
                   <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{product.name}</h3>
                   <div className="flex items-center justify-between">
-                    <p className="text-2xl font-bold text-primary-600">${product.price.toFixed(2)}</p>
+                    <p className="text-2xl font-bold text-primary-600">₹{product.price.toLocaleString('en-IN')}</p>
                     {product.stock === 0 && (
                       <span className="text-red-600 text-sm font-medium">Out of stock</span>
                     )}

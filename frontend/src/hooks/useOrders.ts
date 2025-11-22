@@ -10,7 +10,7 @@ export const useOrders = () => {
       const response = await api.get('/orders');
       return response.data;
     },
-    enabled: !!localStorage.getItem('token'),
+    retry: false, // Don't retry on error
   });
 };
 
@@ -21,7 +21,8 @@ export const useOrder = (id: string) => {
       const response = await api.get(`/orders/${id}`);
       return response.data;
     },
-    enabled: !!id && !!localStorage.getItem('token'),
+    enabled: !!id,
+    retry: false, // Don't retry on error
   });
 };
 

@@ -12,6 +12,7 @@ export default function AdminOrders() {
       const response = await api.get('/admin/orders');
       return response.data;
     },
+    retry: false, // Don't retry on error
   });
 
   const updateOrder = useMutation({
@@ -68,7 +69,7 @@ export default function AdminOrders() {
                     {new Date(order.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    ${order.total.toFixed(2)}
+                    ₹{order.total.toLocaleString('en-IN')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <select
