@@ -37,7 +37,12 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     await user.save();
 
-    const jwtSecret: string = process.env.JWT_SECRET || 'secret';
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error('JWT_SECRET is not set in environment variables');
+      res.status(500).json({ error: 'Server configuration error' });
+      return;
+    }
     const expiresIn: string = process.env.JWT_EXPIRES_IN || '7d';
     
     const token = jwt.sign(
@@ -106,7 +111,12 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const jwtSecret: string = process.env.JWT_SECRET || 'secret';
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error('JWT_SECRET is not set in environment variables');
+      res.status(500).json({ error: 'Server configuration error' });
+      return;
+    }
     const expiresIn: string = process.env.JWT_EXPIRES_IN || '7d';
     
     const token = jwt.sign(

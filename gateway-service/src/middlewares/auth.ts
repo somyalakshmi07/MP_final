@@ -24,7 +24,14 @@ export const authenticate = (
       return;
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as {
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error('JWT_SECRET is not set in environment variables');
+      res.status(500).json({ error: 'Server configuration error' });
+      return;
+    }
+
+    const decoded = jwt.verify(token, jwtSecret) as {
       userId: string;
       email: string;
       role: string;
@@ -47,7 +54,13 @@ export const optionalAuth = (
                   req.cookies?.token;
     if (token) {
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret') as {
+        const jwtSecret = process.env.JWT_SECRET;
+        if (!jwtSecret) {
+          // For optional auth, just continue without user if secret is missing
+          next();
+          return;
+        }
+        const decoded = jwt.verify(token, jwtSecret) as {
           userId: string;
           email: string;
           role: string;

@@ -305,4 +305,65 @@ router.get('/admin/orders', authenticate, async (req: AuthRequest, res: Response
   }
 });
 
+router.put('/admin/orders/:id', authenticate, async (req: AuthRequest, res: Response) => {
+  if (req.user?.role !== 'admin') {
+    res.status(403).json({ error: 'Admin access required' });
+    return;
+  }
+  try {
+    const response = await axios.put(`${services.order}/admin/orders/${req.params.id}`, req.body, {
+      headers: { Authorization: req.headers.authorization },
+    });
+    res.json(response.data);
+  } catch (error: any) {
+    res.status(error.response?.status || 500).json(error.response?.data || { error: 'Service unavailable' });
+  }
+});
+
+// Admin category routes
+router.post('/admin/categories', authenticate, async (req: AuthRequest, res: Response) => {
+  if (req.user?.role !== 'admin') {
+    res.status(403).json({ error: 'Admin access required' });
+    return;
+  }
+  try {
+    const response = await axios.post(`${services.catalog}/admin/categories`, req.body, {
+      headers: { Authorization: req.headers.authorization },
+    });
+    res.json(response.data);
+  } catch (error: any) {
+    res.status(error.response?.status || 500).json(error.response?.data || { error: 'Service unavailable' });
+  }
+});
+
+router.put('/admin/categories/:id', authenticate, async (req: AuthRequest, res: Response) => {
+  if (req.user?.role !== 'admin') {
+    res.status(403).json({ error: 'Admin access required' });
+    return;
+  }
+  try {
+    const response = await axios.put(`${services.catalog}/admin/categories/${req.params.id}`, req.body, {
+      headers: { Authorization: req.headers.authorization },
+    });
+    res.json(response.data);
+  } catch (error: any) {
+    res.status(error.response?.status || 500).json(error.response?.data || { error: 'Service unavailable' });
+  }
+});
+
+router.delete('/admin/categories/:id', authenticate, async (req: AuthRequest, res: Response) => {
+  if (req.user?.role !== 'admin') {
+    res.status(403).json({ error: 'Admin access required' });
+    return;
+  }
+  try {
+    const response = await axios.delete(`${services.catalog}/admin/categories/${req.params.id}`, {
+      headers: { Authorization: req.headers.authorization },
+    });
+    res.json(response.data);
+  } catch (error: any) {
+    res.status(error.response?.status || 500).json(error.response?.data || { error: 'Service unavailable' });
+  }
+});
+
 export default router;

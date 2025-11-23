@@ -15,5 +15,6 @@ router.get('/orders/:id', authenticate, getOrder);
 router.put('/orders/:id', authenticate, updateOrderStatus);
 
 router.get('/admin/orders', authenticate, requireAdmin, getOrders);
+router.put('/admin/orders/:id', authenticate, requireAdmin, updateOrderStatus);
 
 export default router;

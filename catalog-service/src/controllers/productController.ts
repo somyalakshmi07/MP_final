@@ -212,3 +212,110 @@ export const deleteProduct = async (req: Request, res: Response): Promise<void> 
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+// Category admin operations
+export const createCategory = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { name, description } = req.body;
+
+    if (!name || name.trim() === '') {
+      res.status(400).json({ error: 'Category name is required' });
+      return;
+    }
+
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+    // Check if category with same name or slug exists
+    const existing = await Category.findOne({ $or: [{ name }, { slug }] });
+    if (existing) {
+      res.status(400).json({ error: 'Category with this name already exists' });
+      return;
+    }
+
+    const category = new Category({
+      name: name.trim(),
+      slug,
+      description: description?.trim(),
+    });
+
+    await category.save();
+    res.status(201).json(category);
+  } catch (error: any) {
+    if (error.code === 11000) {
+      res.status(400).json({ error: 'Category with this slug already exists' });
+      return;
+    }
+    console.error('Create category error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const updateCategory = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { name, description } = req.body;
+    const categoryId = req.params.id;
+
+    const category = await Category.findById(categoryId);
+    if (!category) {
+      res.status(404).json({ error: 'Category not found' });
+      return;
+    }
+
+    if (name && name.trim() !== '') {
+      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      
+      // Check if another category with same name or slug exists
+      const existing = await Category.findOne({ 
+        $or: [{ name }, { slug }],
+        _id: { $ne: categoryId }
+      });
+      if (existing) {
+        res.status(400).json({ error: 'Category with this name already exists' });
+        return;
+      }
+
+      category.name = name.trim();
+      category.slug = slug;
+    }
+
+    if (description !== undefined) {
+      category.description = description?.trim();
+    }
+
+    await category.save();
+    res.json(category);
+  } catch (error: any) {
+    if (error.code === 11000) {
+      res.status(400).json({ error: 'Category with this slug already exists' });
+      return;
+    }
+    console.error('Update category error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const deleteCategory = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const categoryId = req.params.id;
+
+    // Check if any products use this category
+    const productsCount = await Product.countDocuments({ category: categoryId });
+    if (productsCount > 0) {
+      res.status(400).json({ 
+        error: `Cannot delete category. ${productsCount} product(s) are using this category.` 
+      });
+      return;
+    }
+
+    const category = await Category.findByIdAndDelete(categoryId);
+    if (!category) {
+      res.status(404).json({ error: 'Category not found' });
+      return;
+    }
+
+    res.json({ message: 'Category deleted successfully' });
+  } catch (error) {
+    console.error('Delete category error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
