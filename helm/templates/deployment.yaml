@@ -1,0 +1,55 @@
+{{- $root := . }}
+{{- range $serviceName, $serviceConfig := .Values }}
+{{- if (kindOf $serviceConfig | eq "map") }} {{/* Only process map type values */}}
+{{- if (or (eq $serviceName "frontend") (eq $serviceName "gatewayService") (eq $serviceName "authService") (eq $serviceName "catalogService") (eq $serviceName "cartService") (eq $serviceName "orderService") (eq $serviceName "paymentService") (eq $serviceName "adminService")) }}
+{{- $fullName := printf "%s-%s" $root.Release.Name (lower $serviceConfig.name) }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "ecommerce-app.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: {{ lower $serviceConfig.name }}
+spec:
+  replicas: {{ $serviceConfig.replicas }}
+  selector:
+    matchLabels:
+      {{- include "ecommerce-app.selectorLabels" $root | nindent 6 }}
+      app.kubernetes.io/component: {{ lower $serviceConfig.name }}
+  template:
+    metadata:
+      labels:
+        {{- include "ecommerce-app.selectorLabels" $root | nindent 8 }}
+        app.kubernetes.io/component: {{ lower $serviceConfig.name }}
+    spec:
+      containers:
+        - name: {{ $serviceConfig.name }}
+          image: "{{ $root.Values.global.image.repository }}/{{ $serviceConfig.image.name }}:{{ $root.Values.global.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: {{ $serviceConfig.service.port }}
+              protocol: TCP
+          env:
+            {{- if $serviceConfig.env }}
+            {{- range $key, $value := $serviceConfig.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
+            {{- if or (eq $serviceName "authService") (eq $serviceName "catalogService") (eq $serviceName "cartService") (eq $serviceName "orderService") (eq $serviceName "paymentService") (eq $serviceName "adminService") }}
+            - name: COSMOSDB_CONNECTION_STRING
+              value: {{ $root.Values.global.cosmosDbConnectionString | quote }}
+            {{- end }}
+            {{- if or (eq $serviceName "authService") (eq $serviceName "adminService") }}
+            - name: JWT_SECRET
+              value: {{ $root.Values.global.jwtSecret | quote }}
+            {{- end }}
+            {{- if eq $serviceName "cartService" }}
+            - name: REDIS_HOST
+              value: {{ $root.Values.global.redisHost | quote }}
+            {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

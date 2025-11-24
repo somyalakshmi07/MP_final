@@ -1,7 +1,5 @@
 apiVersion: v2
-name: ecommerce-secure
-description: A Helm chart for E-Commerce Microservices Platform on Azure AKS
-type: application
-version: 1.0.0
+name: ecommerce-app
+description: A Helm chart for deploying the e-commerce microservices.
+version: 0.1.0
 appVersion: "1.0.0"
-

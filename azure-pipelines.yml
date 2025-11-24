@@ -3,10 +3,12 @@ trigger:
 
 variables:
   acrName: acrecomsecure
-  acrConnection: acr-secure-connection
+  acrConnection: acr-prod-connection
   aksCluster: aks-private-ecommerce
   resourceGroup: rg-ecommerce-secure
   helmChartPath: helm
+  kubernetesServiceConnection: azure-rm-prod
+  imageTag: '$(Build.BuildId)'
 
 stages:
 - stage: Build
@@ -23,99 +25,93 @@ stages:
         command: login
         containerRegistry: $(acrConnection)
 
-    - task: Docker@2
-      displayName: Login to Docker Hub
-      inputs:
-        command: login
-        containerRegistry: dockerhub-connection
-
     # Build & Push Frontend
     - task: Docker@2
       displayName: Build & Push Frontend
       inputs:
         command: buildAndPush
-        containerRegistry: sc-acr-acrecomsecure
+        containerRegistry: $(acrConnection)
         repository: frontend
         dockerfile: frontend/Dockerfile
         tags: |
-          $(Build.BuildId)
+          $(imageTag)
 
     # Build & Push Gateway Service
     - task: Docker@2
       displayName: Build & Push Gateway Service
       inputs:
         command: buildAndPush
-        containerRegistry: sc-acr-acrecomsecure
+        containerRegistry: $(acrConnection)
         repository: gateway-service
         dockerfile: gateway-service/Dockerfile
         tags: |
-          $(Build.BuildId)
+          $(imageTag)
 
     # Build & Push Auth Service
     - task: Docker@2
       displayName: Build & Push Auth Service
       inputs:
         command: buildAndPush
-        containerRegistry: sc-acr-acrecomsecure
+        containerRegistry: $(acrConnection)
         repository: auth-service
         dockerfile: auth-service/Dockerfile
         tags: |
-          $(Build.BuildId)
+          $(imageTag)
 
     # Build & Push Catalog Service
     - task: Docker@2
       displayName: Build & Push Catalog Service
       inputs:
         command: buildAndPush
-        containerRegistry: sc-acr-acrecomsecure
+        containerRegistry: $(acrConnection)
         repository: catalog-service
         dockerfile: catalog-service/Dockerfile
         tags: |
-          $(Build.BuildId)
+          $(imageTag)
 
     # Build & Push Cart Service
     - task: Docker@2
       displayName: Build & Push Cart Service
       inputs:
         command: buildAndPush
-        containerRegistry: sc-acr-acrecomsecure
+        containerRegistry: $(acrConnection)
         repository: cart-service
         dockerfile: cart-service/Dockerfile
         tags: |
-          $(Build.BuildId)
+          $(imageTag)
 
     # Build & Push Order Service
     - task: Docker@2
       displayName: Build & Push Order Service
       inputs:
         command: buildAndPush
-        containerRegistry: sc-acr-acrecomsecure
+        containerRegistry: $(acrConnection)
         repository: order-service
         dockerfile: order-service/Dockerfile
         tags: |
-          $(Build.BuildId)
+          $(imageTag)
 
     # Build & Push Payment Service
     - task: Docker@2
       displayName: Build & Push Payment Service
       inputs:
         command: buildAndPush
-        containerRegistry: sc-acr-acrecomsecure
+        containerRegistry: $(acrConnection)
         repository: payment-service
         dockerfile: payment-service/Dockerfile
         tags: |
-          $(Build.BuildId)
+          $(imageTag)
 
     # Build & Push Admin Service
     - task: Docker@2
       displayName: Build & Push Admin Service
       inputs:
         command: buildAndPush
-        containerRegistry: sc-acr-acrecomsecure
+        containerRegistry: $(acrConnection)
         repository: admin-service
         dockerfile: admin-service/Dockerfile
         tags: |
-          $(Build.BuildId)
+          $(imageTag)
 
 - stage: Deploy
   displayName: Deploy to Private AKS
@@ -132,19 +128,9 @@ stages:
         deploy:
           steps:
           - task: AzureCLI@2
-            displayName: Install Helm
-            inputs:
-              azureSubscription: azure-rm-secure
-              scriptType: bash
-              scriptLocation: inlineScript
-              inlineScript: |
-                curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-                helm version
-
-          - task: AzureCLI@2
             displayName: Configure kubectl for AKS
             inputs:
-              azureSubscription: azure-rm-secure
+              azureSubscription: $(kubernetesServiceConnection)
               scriptType: bash
               scriptLocation: inlineScript
               inlineScript: |
@@ -154,10 +140,10 @@ stages:
             displayName: Deploy Helm Chart
             inputs:
               connectionType: Azure Resource Manager
-              azureSubscription: azure-rm-secure
+              azureSubscription: $(kubernetesServiceConnection)
               azureResourceGroup: $(resourceGroup)
               kubernetesCluster: $(aksCluster)
-              namespace: backend
+              namespace: default # Assuming default namespace for now, will refine with dedicated namespaces
               command: upgrade
               chartType: FilePath
               chartPath: $(helmChartPath)
@@ -167,5 +153,5 @@ stages:
                 --install
                 --atomic
                 --timeout 10m
-                --set image.tag=$(Build.BuildId)
-                --set image.repository=$(acrName).azurecr.io
+                --set global.image.tag=$(imageTag)
+                --set global.image.repository=$(acrName).azurecr.io

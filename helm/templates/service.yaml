@@ -1,0 +1,26 @@
+{{- $root := . }}
+{{- range $serviceName, $serviceConfig := .Values }}
+{{- if (kindOf $serviceConfig | eq "map") }} {{/* Only process map type values */}}
+{{- if (or (eq $serviceName "frontend") (eq $serviceName "gatewayService") (eq $serviceName "authService") (eq $serviceName "catalogService") (eq $serviceName "cartService") (eq $serviceName "orderService") (eq $serviceName "paymentService") (eq $serviceName "adminService")) }}
+{{- $fullName := printf "%s-%s" $root.Release.Name (lower $serviceConfig.name) }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "ecommerce-app.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: {{ lower $serviceConfig.name }}
+spec:
+  type: {{ $serviceConfig.service.type }}
+  ports:
+    - port: {{ $serviceConfig.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "ecommerce-app.selectorLabels" $root | nindent 4 }}
+    app.kubernetes.io/component: {{ lower $serviceConfig.name }}
+{{- end }}
+{{- end }}
+{{- end }}

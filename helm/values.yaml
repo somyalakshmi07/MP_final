@@ -1,110 +1,136 @@
-# Default values for ecommerce-secure
-image:
-  repository: acrecomsecure.azurecr.io
-  tag: latest
+# Default values for ecommerce-app.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
 
-# Global settings
-namespace: backend
-jwtSecret:
-  name: jwt-secret
-  key: secret
+global:
+  image:
+    repository: acrecomsecure.azurecr.io # Overridden by pipeline
+    tag: latest # Overridden by pipeline
+  cosmosDbConnectionString: "mongodb://cosmosdb:password@cosmosdb.documents.azure.com:10255/?ssl=true&replicaSet=globaldb" # Placeholder, will be passed as secret from Azure DevOps
+  jwtSecret: "supersecretjwtkey" # Placeholder, will be passed as secret from Azure DevOps
+  redisHost: ecommerce-redis # Placeholder, if using managed Redis or dedicated pod
 
-# Azure Cosmos DB (MongoDB API)
-mongodb:
-  uri: "mongodb+srv://dbuser:Password%40123@cosmos-ecommerce.global.mongocluster.cosmos.azure.com/ecommerce?tls=true&authMechanism=SCRAM-SHA-256&retrywrites=false&maxIdleTimeMS=120000"
-
-# Redis
-redis:
-  enabled: true
-  image: redis:7-alpine
-  port: 6379
-
-# Services configuration
-services:
-  gateway:
-    replicas: 2
-    port: 3000
-    env:
-      PORT: "3000"
-      AUTH_SERVICE_URL: "http://auth-service:3001"
-      CATALOG_SERVICE_URL: "http://catalog-service:3002"
-      CART_SERVICE_URL: "http://cart-service:3003"
-      ORDER_SERVICE_URL: "http://order-service:3004"
-      PAYMENT_SERVICE_URL: "http://payment-service:3005"
-      ADMIN_SERVICE_URL: "http://admin-service:3006"
-
-  auth:
-    replicas: 2
-    port: 3001
-    env:
-      PORT: "3001"
-      REDIS_HOST: "redis"
-      REDIS_PORT: "6379"
-
-  catalog:
-    replicas: 2
-    port: 3002
-    env:
-      PORT: "3002"
-
-  cart:
-    replicas: 2
-    port: 3003
-    env:
-      PORT: "3003"
-      REDIS_HOST: "redis"
-      REDIS_PORT: "6379"
-      CATALOG_SERVICE_URL: "http://catalog-service:3002"
-
-  order:
-    replicas: 2
-    port: 3004
-    env:
-      PORT: "3004"
-      CART_SERVICE_URL: "http://cart-service:3003"
-
-  payment:
-    replicas: 2
-    port: 3005
-    env:
-      PORT: "3005"
-      ORDER_SERVICE_URL: "http://order-service:3004"
-
-  admin:
-    replicas: 1
-    port: 3006
-    env:
-      PORT: "3006"
-      CATALOG_SERVICE_URL: "http://catalog-service:3002"
-      ORDER_SERVICE_URL: "http://order-service:3004"
-
-  frontend:
-    replicas: 2
+# -- Frontend Service Configuration
+frontend:
+  name: frontend
+  image:
+    name: frontend
+  replicas: 1
+  service:
+    type: ClusterIP
     port: 80
-    env:
-      VITE_API_URL: "http://gateway-service:3000"
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: azure/application-gateway
+      # More AGIC specific annotations can be added here, e.g., for WAF policy, rewrite rules etc.
+      # appgw.ingress.kubernetes.io/backend-path-prefix: "/"
+    host: frontend.example.com # Replace with your actual frontend domain
+    path: /
+    pathType: Prefix
 
-# Ingress configuration for Application Gateway
-ingress:
-  enabled: true
-  className: azure/application-gateway
-  annotations:
-    appgw.ingress.kubernetes.io/ssl-redirect: "true"
-  hosts:
-    - host: "*"
-      paths:
-        - path: /
-          pathType: Prefix
-          backend:
-            service:
-              name: frontend-service
-              port:
-                number: 80
-        - path: /api
-          pathType: Prefix
-          backend:
-            service:
-              name: gateway-service
-              port:
-                number: 3000
+# -- Gateway Service Configuration
+gatewayService:
+  name: gateway-service
+  image:
+    name: gateway-service
+  replicas: 1
+  service:
+    type: ClusterIP
+    port: 3000
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: azure/application-gateway
+      # appgw.ingress.kubernetes.io/backend-path-prefix: "/api"
+    host: api.example.com # Replace with your actual API domain
+    path: /api(/|$)(.*)
+    pathType: Prefix
+  env:
+    # Example for service URLs, assuming services are accessible via their Kubernetes service names
+    FRONTEND_URL: "http://frontend.ecommerce-app.svc.cluster.local" # Adjust if frontend is internal
+    AUTH_SERVICE_URL: "http://auth-service.ecommerce-app.svc.cluster.local"
+    CATALOG_SERVICE_URL: "http://catalog-service.ecommerce-app.svc.cluster.local"
+    CART_SERVICE_URL: "http://cart-service.ecommerce-app.svc.cluster.local"
+    ORDER_SERVICE_URL: "http://order-service.ecommerce-app.svc.cluster.local"
+    PAYMENT_SERVICE_URL: "http://payment-service.ecommerce-app.svc.cluster.local"
+    ADMIN_SERVICE_URL: "http://admin-service.ecommerce-app.svc.cluster.local"
 
+# -- Auth Service Configuration
+authService:
+  name: auth-service
+  image:
+    name: auth-service
+  replicas: 1
+  service:
+    type: ClusterIP
+    port: 3000
+  env:
+    COSMOSDB_CONNECTION_STRING: "" # Will be set by global.cosmosDbConnectionString
+    JWT_SECRET: "" # Will be set by global.jwtSecret
+    # If gateway routes directly, this should be the public URL. Otherwise, internal.
+    GATEWAY_URL: "http://gateway-service.ecommerce-app.svc.cluster.local"
+
+# -- Catalog Service Configuration
+catalogService:
+  name: catalog-service
+  image:
+    name: catalog-service
+  replicas: 1
+  service:
+    type: ClusterIP
+    port: 3000
+  env:
+    COSMOSDB_CONNECTION_STRING: "" # Will be set by global.cosmosDbConnectionString
+
+# -- Cart Service Configuration
+cartService:
+  name: cart-service
+  image:
+    name: cart-service
+  replicas: 1
+  service:
+    type: ClusterIP
+    port: 3000
+  env:
+    COSMOSDB_CONNECTION_STRING: "" # Will be set by global.cosmosDbConnectionString
+    REDIS_HOST: "" # Will be set by global.redisHost
+    # If you have a separate Redis service, configure its host here
+    # REDIS_PORT: 6379
+
+# -- Order Service Configuration
+orderService:
+  name: order-service
+  image:
+    name: order-service
+  replicas: 1
+  service:
+    type: ClusterIP
+    port: 3000
+  env:
+    COSMOSDB_CONNECTION_STRING: "" # Will be set by global.cosmosDbConnectionString
+
+# -- Payment Service Configuration
+paymentService:
+  name: payment-service
+  image:
+    name: payment-service
+  replicas: 1
+  service:
+    type: ClusterIP
+    port: 3000
+  env:
+    COSMOSDB_CONNECTION_STRING: "" # Will be set by global.cosmosDbConnectionString
+
+# -- Admin Service Configuration
+adminService:
+  name: admin-service
+  image:
+    name: admin-service
+  replicas: 1
+  service:
+    type: ClusterIP
+    port: 3000
+  env:
+    COSMOSDB_CONNECTION_STRING: "" # Will be set by global.cosmosDbConnectionString
+    JWT_SECRET: "" # Will be set by global.jwtSecret

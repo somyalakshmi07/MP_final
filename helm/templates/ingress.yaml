@@ -1,34 +1,34 @@
-{{- if .Values.ingress.enabled -}}
+{{- $root := . }}
+{{- range $serviceName, $serviceConfig := .Values }}
+{{- if (kindOf $serviceConfig | eq "map") }}
+{{- if (or (eq $serviceName "frontend") (eq $serviceName "gatewayService")) }}
+{{- if $serviceConfig.ingress.enabled -}}
+{{- $fullName := printf "%s-%s" $root.Release.Name (lower $serviceConfig.name) }}
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ecommerce-ingress
-  namespace: {{ .Values.namespace }}
+  name: {{ $fullName }}
   labels:
-    {{- include "ecommerce-secure.labels" . | nindent 4 }}
+    {{- include "ecommerce-app.labels" $root | nindent 4 }}
+    app.kubernetes.io/component: {{ lower $serviceConfig.name }}
+  {{- with $serviceConfig.ingress.annotations }}
   annotations:
-    {{- with .Values.ingress.annotations }}
     {{- toYaml . | nindent 4 }}
-    {{- end }}
-    kubernetes.io/ingress.class: {{ .Values.ingress.className }}
-spec:
-  {{- if .Values.ingress.className }}
-  ingressClassName: {{ .Values.ingress.className }}
   {{- end }}
+spec:
   rules:
-    {{- range .Values.ingress.hosts }}
-    - host: {{ .host | quote }}
+    - host: {{ $serviceConfig.ingress.host | quote }}
       http:
         paths:
-          {{- range .paths }}
-          - path: {{ .path }}
-            pathType: {{ .pathType }}
+          - path: {{ $serviceConfig.ingress.path }}
+            pathType: {{ $serviceConfig.ingress.pathType }}
             backend:
               service:
-                name: {{ .backend.service.name }}
+                name: {{ $fullName }}
                 port:
-                  number: {{ .backend.service.port.number }}
-          {{- end }}
-    {{- end }}
+                  number: {{ $serviceConfig.service.port }}
 {{- end }}
-
+{{- end }}
+{{- end }}
+{{- end }}
