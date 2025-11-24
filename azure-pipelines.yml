@@ -27,103 +27,95 @@ stages:
       displayName: Login to Docker Hub
       inputs:
         command: login
-        containerRegistry: dockerhub
+        containerRegistry: dockerhub-connection
 
     # Build & Push Frontend
     - task: Docker@2
       displayName: Build & Push Frontend
       inputs:
         command: buildAndPush
-        dockerfile: frontend/Dockerfile
+        containerRegistry: sc-acr-acrecomsecure
         repository: frontend
-        containerRegistry: $(acrConnection)
+        dockerfile: frontend/Dockerfile
         tags: |
           $(Build.BuildId)
-          latest
 
     # Build & Push Gateway Service
     - task: Docker@2
       displayName: Build & Push Gateway Service
       inputs:
         command: buildAndPush
-        dockerfile: gateway-service/Dockerfile
+        containerRegistry: sc-acr-acrecomsecure
         repository: gateway-service
-        containerRegistry: $(acrConnection)
+        dockerfile: gateway-service/Dockerfile
         tags: |
           $(Build.BuildId)
-          latest
 
     # Build & Push Auth Service
     - task: Docker@2
       displayName: Build & Push Auth Service
       inputs:
         command: buildAndPush
-        dockerfile: auth-service/Dockerfile
+        containerRegistry: sc-acr-acrecomsecure
         repository: auth-service
-        containerRegistry: $(acrConnection)
+        dockerfile: auth-service/Dockerfile
         tags: |
           $(Build.BuildId)
-          latest
 
     # Build & Push Catalog Service
     - task: Docker@2
       displayName: Build & Push Catalog Service
       inputs:
         command: buildAndPush
-        dockerfile: catalog-service/Dockerfile
+        containerRegistry: sc-acr-acrecomsecure
         repository: catalog-service
-        containerRegistry: $(acrConnection)
+        dockerfile: catalog-service/Dockerfile
         tags: |
           $(Build.BuildId)
-          latest
 
     # Build & Push Cart Service
     - task: Docker@2
       displayName: Build & Push Cart Service
       inputs:
         command: buildAndPush
-        dockerfile: cart-service/Dockerfile
+        containerRegistry: sc-acr-acrecomsecure
         repository: cart-service
-        containerRegistry: $(acrConnection)
+        dockerfile: cart-service/Dockerfile
         tags: |
           $(Build.BuildId)
-          latest
 
     # Build & Push Order Service
     - task: Docker@2
       displayName: Build & Push Order Service
       inputs:
         command: buildAndPush
-        dockerfile: order-service/Dockerfile
+        containerRegistry: sc-acr-acrecomsecure
         repository: order-service
-        containerRegistry: $(acrConnection)
+        dockerfile: order-service/Dockerfile
         tags: |
           $(Build.BuildId)
-          latest
 
     # Build & Push Payment Service
     - task: Docker@2
       displayName: Build & Push Payment Service
       inputs:
         command: buildAndPush
-        dockerfile: payment-service/Dockerfile
+        containerRegistry: sc-acr-acrecomsecure
         repository: payment-service
-        containerRegistry: $(acrConnection)
+        dockerfile: payment-service/Dockerfile
         tags: |
           $(Build.BuildId)
-          latest
 
     # Build & Push Admin Service
     - task: Docker@2
       displayName: Build & Push Admin Service
       inputs:
         command: buildAndPush
-        dockerfile: admin-service/Dockerfile
+        containerRegistry: sc-acr-acrecomsecure
         repository: admin-service
-        containerRegistry: $(acrConnection)
+        dockerfile: admin-service/Dockerfile
         tags: |
           $(Build.BuildId)
-          latest
 
 - stage: Deploy
   displayName: Deploy to Private AKS
@@ -177,4 +169,3 @@ stages:
                 --timeout 10m
                 --set image.tag=$(Build.BuildId)
                 --set image.repository=$(acrName).azurecr.io
-
