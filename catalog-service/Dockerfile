@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+﻿FROM acrecomsecure12345.azurecr.io/node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -8,7 +8,7 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-FROM node:20-alpine
+FROM acrecomsecure12345.azurecr.io/node:20-alpine
 
 WORKDIR /app
 

@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+﻿FROM acrecomsecure12345.azurecr.io/node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -8,7 +8,7 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-FROM nginx:alpine
+FROM acrecomsecure12345.azurecr.io/nginx:alpine
 
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
