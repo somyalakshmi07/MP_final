@@ -8,7 +8,7 @@ variables:
   acrConnection: acr-prod-connection
   aksCluster: aks-private-ecommerce
   resourceGroup: rg-ecommerce
-  helmChartPath: helm
+  helmChartPath: helm/eCommerce
   kubernetesServiceConnection: azure-rm-prod
   imageTag: '$(Build.BuildId)'
 
@@ -128,6 +128,9 @@ stages:
               inlineScript: |
                 az aks get-credentials --resource-group $(resourceGroup) --name $(aksCluster) --overwrite-existing
 
+          - script: ls -R
+            displayName: 'List files in repository'
+
           - task: HelmDeploy@0
             displayName: Deploy Helm Chart
             inputs:
@@ -140,7 +143,7 @@ stages:
               chartType: FilePath
               chartPath: $(helmChartPath)
               releaseName: ecommerce-secure
-              valueFile: helm/values.yaml
+              valueFile: $(helmChartPath)/values.yaml
               install: true
               arguments: >
                 --atomic
