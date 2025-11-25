@@ -8,121 +8,63 @@ variables:
   acrConnection: acr-prod-connection
   aksCluster: aks-private-ecommerce
   resourceGroup: rg-ecommerce
-  helmChartPath: helm/eCommerce
+  helmChartPath: ./helm  # <-- FIXED (must be folder, not file path)
   kubernetesServiceConnection: azure-rm-prod
   imageTag: '$(Build.BuildId)'
 
 stages:
+
+# ------------------ BUILD + PUSH IMAGES ------------------
 - stage: Build
   displayName: Build & Push Images
   jobs:
   - job: BuildImages
     pool:
       vmImage: ubuntu-latest
+
     steps:
+    - checkout: self
+
+    # ---- FIXED: REMOVE MSI AUTH ----
     - task: Bash@3
-      displayName: Login to ACR (Manual Auth)
+      displayName: Login to ACR (Manual Authentication)
       inputs:
         targetType: 'inline'
         script: |
           echo "$ACR_PASSWORD" | docker login $(acrName).azurecr.io -u "$ACR_USERNAME" --password-stdin
       env:
-          ACR_USERNAME: $(ACR_USERNAME)
-          ACR_PASSWORD: $(ACR_PASSWORD)
+        ACR_USERNAME: $(ACR_USERNAME)
+        ACR_PASSWORD: $(ACR_PASSWORD)
 
-    - task: Docker@2
-      displayName: Build & Push Frontend
-      inputs:
-        command: buildAndPush
-        containerRegistry: $(acrConnection)
-        repository: frontend
-        dockerfile: frontend/Dockerfile
-        tags: |
-          $(imageTag)
+    # ---- BUILD & PUSH SERVICES ----
+    - ${{ each svc in ['frontend','gateway-service','auth-service','catalog-service','cart-service','order-service','payment-service','admin-service'] }}:
+      - task: Docker@2
+        displayName: Build & Push ${{ svc }}
+        inputs:
+          command: buildAndPush
+          containerRegistry: $(acrConnection)
+          repository: ${{ svc }}
+          dockerfile: ${{ svc }}/Dockerfile
+          tags: |
+            $(imageTag)
 
-    - task: Docker@2
-      displayName: Build & Push Gateway Service
-      inputs:
-        command: buildAndPush
-        containerRegistry: $(acrConnection)
-        repository: gateway-service
-        dockerfile: gateway-service/Dockerfile
-        tags: |
-          $(imageTag)
-
-    - task: Docker@2
-      displayName: Build & Push Auth Service
-      inputs:
-        command: buildAndPush
-        containerRegistry: $(acrConnection)
-        repository: auth-service
-        dockerfile: auth-service/Dockerfile
-        tags: |
-          $(imageTag)
-
-    - task: Docker@2
-      displayName: Build & Push Catalog Service
-      inputs:
-        command: buildAndPush
-        containerRegistry: $(acrConnection)
-        repository: catalog-service
-        dockerfile: catalog-service/Dockerfile
-        tags: |
-          $(imageTag)
-
-    - task: Docker@2
-      displayName: Build & Push Cart Service
-      inputs:
-        command: buildAndPush
-        containerRegistry: $(acrConnection)
-        repository: cart-service
-        dockerfile: cart-service/Dockerfile
-        tags: |
-          $(imageTag)
-
-    - task: Docker@2
-      displayName: Build & Push Order Service
-      inputs:
-        command: buildAndPush
-        containerRegistry: $(acrConnection)
-        repository: order-service
-        dockerfile: order-service/Dockerfile
-        tags: |
-          $(imageTag)
-
-    - task: Docker@2
-      displayName: Build & Push Payment Service
-      inputs:
-        command: buildAndPush
-        containerRegistry: $(acrConnection)
-        repository: payment-service
-        dockerfile: payment-service/Dockerfile
-        tags: |
-          $(imageTag)
-
-    - task: Docker@2
-      displayName: Build & Push Admin Service
-      inputs:
-        command: buildAndPush
-        containerRegistry: $(acrConnection)
-        repository: admin-service
-        dockerfile: admin-service/Dockerfile
-        tags: |
-          $(imageTag)
-
+# ------------------ DEPLOY TO AKS ------------------
 - stage: Deploy
   displayName: Deploy to Private AKS
   dependsOn: Build
   condition: succeeded()
+
   jobs:
   - deployment: Deploy
     environment: production-secure
     pool:
       vmImage: ubuntu-latest
+
     strategy:
       runOnce:
         deploy:
           steps:
+
           - task: AzureCLI@2
             displayName: Configure kubectl for AKS
             inputs:
@@ -132,8 +74,12 @@ stages:
               inlineScript: |
                 az aks get-credentials --resource-group $(resourceGroup) --name $(aksCluster) --overwrite-existing
 
-          - script: ls -R
-            displayName: 'List files in repository'
+          # Debug for path confirmation
+          - script: |
+              echo "🔍 Directory structure:"
+              pwd
+              ls -R
+            displayName: "Debug: List files"
 
           - task: HelmDeploy@0
             displayName: Deploy Helm Chart
@@ -145,7 +91,7 @@ stages:
               namespace: default
               command: upgrade
               chartType: FilePath
-              chartPath: $(helmChartPath)
+              chartPath: $(helmChartPath)  # <-- FIXED
               releaseName: ecommerce-secure
               valueFile: $(helmChartPath)/values.yaml
               install: true
