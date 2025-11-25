@@ -1,4 +1,5 @@
-﻿FROM acrecomsecure12345.azurecr.io/base/node:20-alpine AS builder
+# Stage 1 — Build stage
+FROM acrecomsecure12345.azurecr.io/base/node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -8,15 +9,15 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-FROM acrecomsecure12345.azurecr.io/base/node:20-alpine
+# Stage 2 — Production runtime
+FROM acrecomsecure12345.azurecr.io/base/node:20-alpine AS runtime
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install --omit=dev
-
+# Only copy built output + dependencies
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/node_modules ./node_modules
 
 EXPOSE 3005
-
 CMD ["node", "dist/index.js"]
