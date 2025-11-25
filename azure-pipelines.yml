@@ -1,11 +1,13 @@
 trigger:
-  - main
+  branches:
+    include:
+      - main
 
 variables:
-  acrName: acrecomsecure
+  acrName: acrecomsecure12345
   acrConnection: acr-prod-connection
   aksCluster: aks-private-ecommerce
-  resourceGroup: rg-ecommerce-secure
+  resourceGroup: rg-ecommerce
   helmChartPath: helm
   kubernetesServiceConnection: azure-rm-prod
   imageTag: '$(Build.BuildId)'
@@ -15,7 +17,6 @@ stages:
   displayName: Build & Push Images
   jobs:
   - job: BuildImages
-    displayName: Build and Push All Images
     pool:
       vmImage: ubuntu-latest
     steps:
@@ -25,7 +26,6 @@ stages:
         command: login
         containerRegistry: $(acrConnection)
 
-    # Build & Push Frontend
     - task: Docker@2
       displayName: Build & Push Frontend
       inputs:
@@ -36,7 +36,6 @@ stages:
         tags: |
           $(imageTag)
 
-    # Build & Push Gateway Service
     - task: Docker@2
       displayName: Build & Push Gateway Service
       inputs:
@@ -47,7 +46,6 @@ stages:
         tags: |
           $(imageTag)
 
-    # Build & Push Auth Service
     - task: Docker@2
       displayName: Build & Push Auth Service
       inputs:
@@ -58,7 +56,6 @@ stages:
         tags: |
           $(imageTag)
 
-    # Build & Push Catalog Service
     - task: Docker@2
       displayName: Build & Push Catalog Service
       inputs:
@@ -69,7 +66,6 @@ stages:
         tags: |
           $(imageTag)
 
-    # Build & Push Cart Service
     - task: Docker@2
       displayName: Build & Push Cart Service
       inputs:
@@ -80,7 +76,6 @@ stages:
         tags: |
           $(imageTag)
 
-    # Build & Push Order Service
     - task: Docker@2
       displayName: Build & Push Order Service
       inputs:
@@ -91,7 +86,6 @@ stages:
         tags: |
           $(imageTag)
 
-    # Build & Push Payment Service
     - task: Docker@2
       displayName: Build & Push Payment Service
       inputs:
@@ -102,7 +96,6 @@ stages:
         tags: |
           $(imageTag)
 
-    # Build & Push Admin Service
     - task: Docker@2
       displayName: Build & Push Admin Service
       inputs:
@@ -119,7 +112,6 @@ stages:
   condition: succeeded()
   jobs:
   - deployment: Deploy
-    displayName: Helm Deploy
     environment: production-secure
     pool:
       vmImage: ubuntu-latest
@@ -143,14 +135,14 @@ stages:
               azureSubscription: $(kubernetesServiceConnection)
               azureResourceGroup: $(resourceGroup)
               kubernetesCluster: $(aksCluster)
-              namespace: default # Assuming default namespace for now, will refine with dedicated namespaces
+              namespace: default
               command: upgrade
               chartType: FilePath
               chartPath: $(helmChartPath)
               releaseName: ecommerce-secure
               valueFile: helm/values.yaml
-              arguments: |
-                --install
+              install: true
+              arguments: >
                 --atomic
                 --timeout 10m
                 --set global.image.tag=$(imageTag)
