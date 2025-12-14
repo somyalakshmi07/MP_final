@@ -4,7 +4,7 @@ trigger:
       - main
 
 variables:
-  acrName: acrecomsecure12345
+  acrName: acrecomsomyaea123
   acrConnection: acr-prod-connection
   aksCluster: aks-private-ecommerce
   resourceGroup: rg-ecommerce

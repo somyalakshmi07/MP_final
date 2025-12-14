@@ -17,7 +17,7 @@ spec:
       - name: acr-secret
       containers:
       - name: cart
-        image: acrecomsecure12345.azurecr.io/cart-service:latest
+        image: acrecomsomyaea123.azurecr.io/cart-service:latest
         ports:
         - containerPort: 80
 ---

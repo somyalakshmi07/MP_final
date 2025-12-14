@@ -1,5 +1,5 @@
 # --- CONFIGURATION ---
-$ACR="acrecomsecure12345.azurecr.io"
+$ACR="acrecomsomyaea123.azurecr.io"
 
 $services=@(
     "admin-service",
@@ -13,7 +13,7 @@ $services=@(
 )
 
 Write-Host "Logging into Azure Container Registry..." -ForegroundColor Cyan
-az acr login --name acrecomsecure12345
+az acr login --name acrecomsomyaea123
 
 foreach ($service in $services) {
 

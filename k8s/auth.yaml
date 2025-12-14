@@ -17,7 +17,7 @@ spec:
       - name: acr-secret
       containers:
       - name: auth
-        image: acrecomsecure12345.azurecr.io/auth-service:latest
+        image: acrecomsomyaea123.azurecr.io/auth-service:latest
         ports:
         - containerPort: 80
 ---

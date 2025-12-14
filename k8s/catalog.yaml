@@ -17,7 +17,7 @@ spec:
       - name: acr-secret
       containers:
       - name: catalog
-        image: acrecomsecure12345.azurecr.io/catalog-service:latest
+        image: acrecomsomyaea123.azurecr.io/catalog-service:latest
         ports:
         - containerPort: 80
 ---

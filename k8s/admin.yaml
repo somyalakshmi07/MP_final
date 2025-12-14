@@ -17,7 +17,7 @@ spec:
       - name: acr-secret
       containers:
       - name: admin
-        image: acrecomsecure12345.azurecr.io/admin-service:latest
+        image: acrecomsomyaea123.azurecr.io/admin-service:latest
         ports:
         - containerPort: 80
 ---

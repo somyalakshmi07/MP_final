@@ -17,7 +17,7 @@ spec:
       - name: acr-secret
       containers:
       - name: payment
-        image: acrecomsecure12345.azurecr.io/payment-service:latest
+        image: acrecomsomyaea123.azurecr.io/payment-service:latest
         ports:
         - containerPort: 80
 ---

@@ -17,7 +17,7 @@ spec:
       - name: acr-secret
       containers:
       - name: frontend
-        image: acrecomsecure12345.azurecr.io/frontend-service:latest
+        image: acrecomsomyaea123.azurecr.io/frontend-service:latest
         ports:
         - containerPort: 80
 ---
