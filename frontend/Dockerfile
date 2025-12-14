@@ -1,5 +1,5 @@
-﻿# ---- Stage 1: Build ----
-FROM acrecomsomyaea123.azurecr.io/base/node:20-alpine AS builder
+﻿# ---------- Stage 1: Build ----------
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -9,11 +9,17 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-# ---- Stage 2: Run ----
-FROM acrecomsomyaea123.azurecr.io/base/node:20-alpine
+# ---------- Stage 2: Serve ----------
+FROM nginx:alpine
 
-WORKDIR /app
-COPY --from=builder /app /app
+# Remove default nginx website
+RUN rm -rf /usr/share/nginx/html/*
 
+# Copy build output to nginx
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Expose port 80
 EXPOSE 80
-CMD ["npm", "start"]
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]

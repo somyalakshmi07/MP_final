@@ -52,3 +52,80 @@ spec:
   - port: 80
     targetPort: 3000
 
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway-service
+  namespace: ecommerce
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gateway-service
+  template:
+    metadata:
+      labels:
+        app: gateway-service
+    spec:
+      containers:
+      - name: gateway-service
+        image: acrecomsomyaea123.azurecr.io/gateway-service:v1
+        ports:
+        - containerPort: 3000
+        env:
+        - name: PORT
+          value: "3000"
+        - name: AUTH_SERVICE_URL
+          value: "http://auth-service:3001"
+        - name: CATALOG_SERVICE_URL
+          value: "http://catalog-service:3002"
+        - name: CART_SERVICE_URL
+          value: "http://cart-service:3003"
+        - name: ORDER_SERVICE_URL
+          value: "http://order-service:3004"
+        - name: PAYMENT_SERVICE_URL
+          value: "http://payment-service:3005"
+        - name: ADMIN_SERVICE_URL
+          value: "http://admin-service:3006"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: jwt-secret
+              key: secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-service
+  namespace: ecommerce
+spec:
+  type: ClusterIP
+  selector:
+    app: gateway-service
+  ports:
+  - port: 80
+    targetPort: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ecommerce-ingress
+  namespace: ecommerce
+  annotations:
+    kubernetes.io/ingress.class: azure/application-gateway
+    appgw.ingress.kubernetes.io/health-probe-path: /health
+    appgw.ingress.kubernetes.io/health-probe-port: "3000"
+spec:
+  ingressClassName: azure-application-gateway
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: gateway-service
+            port:
+              number: 80
+
+

@@ -1,5 +1,5 @@
 ﻿# Stage 1 — Build stage
-FROM acrecomsomyaea123.azurecr.io/base/node:20-alpine AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -9,8 +9,9 @@ RUN npm install
 COPY . .
 RUN npm run build
 
+
 # Stage 2 — Production runtime
-FROM acrecomsomyaea123.azurecr.io/base/node:20-alpine AS runtime
+FROM node:20-alpine AS runtime
 
 WORKDIR /app
 
