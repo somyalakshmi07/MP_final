@@ -4,99 +4,50 @@ trigger:
       - main
 
 variables:
-  acrName: acrecomsomyaea123
-  acrConnection: acr-prod-connection
-  aksCluster: aks-private-ecommerce
-  resourceGroup: rg-ecommerce
-  helmChartPath: ./helm  # <-- FIXED (must be folder, not file path)
-  kubernetesServiceConnection: azure-rm-prod
-  imageTag: '$(Build.BuildId)'
+  acrName: acrecomsomyaea123.azurecr.io
+  namespace: ecommerce
 
 stages:
-
-# ------------------ BUILD + PUSH IMAGES ------------------
-- stage: Build
+- stage: BuildAndPush
   displayName: Build & Push Images
   jobs:
-  - job: BuildImages
+  - job: DockerBuild
     pool:
       vmImage: ubuntu-latest
-
     steps:
-    - checkout: self
-
-    # ---- FIXED: REMOVE MSI AUTH ----
-    - task: Bash@3
-      displayName: Login to ACR (Manual Authentication)
+    - task: AzureCLI@2
       inputs:
-        targetType: 'inline'
-        script: |
-          echo "$ACR_PASSWORD" | docker login $(acrName).azurecr.io -u "$ACR_USERNAME" --password-stdin
-      env:
-        ACR_USERNAME: $(ACR_USERNAME)
-        ACR_PASSWORD: $(ACR_PASSWORD)
+        azureSubscription: sc-aks-acr-mi
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az acr login --name acrecomsomyaea123
 
-    # ---- BUILD & PUSH SERVICES ----
-    - ${{ each svc in ['frontend','gateway-service','auth-service','catalog-service','cart-service','order-service','payment-service','admin-service'] }}:
-      - task: Docker@2
-        displayName: Build & Push ${{ svc }}
-        inputs:
-          command: buildAndPush
-          containerRegistry: $(acrConnection)
-          repository: ${{ svc }}
-          dockerfile: ${{ svc }}/Dockerfile
-          tags: |
-            $(imageTag)
+          services=("auth-service" "cart-service" "catalog-service" "order-service" "payment-service" "frontend" "gateway-service")
 
-# ------------------ DEPLOY TO AKS ------------------
-- stage: Deploy
-  displayName: Deploy to Private AKS
-  dependsOn: Build
-  condition: succeeded()
+          for svc in "${services[@]}"; do
+            docker build -t $acrName/$svc:latest ./$svc
+            docker push $acrName/$svc:latest
+          done
 
+- stage: DeployToAKS
+  displayName: Deploy to AKS
+  dependsOn: BuildAndPush
   jobs:
-  - deployment: Deploy
-    environment: production-secure
+  - job: Deploy
     pool:
       vmImage: ubuntu-latest
+    steps:
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: sc-aks-acr-mi
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az aks get-credentials \
+            --resource-group rg-ecommerce-arm \
+            --name aks-ecommerce-eastasia \
+            --overwrite-existing
 
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-
-          - task: AzureCLI@2
-            displayName: Configure kubectl for AKS
-            inputs:
-              azureSubscription: $(kubernetesServiceConnection)
-              scriptType: bash
-              scriptLocation: inlineScript
-              inlineScript: |
-                az aks get-credentials --resource-group $(resourceGroup) --name $(aksCluster) --overwrite-existing
-
-          # Debug for path confirmation
-          - script: |
-              echo "🔍 Directory structure:"
-              pwd
-              ls -R
-            displayName: "Debug: List files"
-
-          - task: HelmDeploy@0
-            displayName: Deploy Helm Chart
-            inputs:
-              connectionType: Azure Resource Manager
-              azureSubscription: $(kubernetesServiceConnection)
-              azureResourceGroup: $(resourceGroup)
-              kubernetesCluster: $(aksCluster)
-              namespace: default
-              command: upgrade
-              chartType: FilePath
-              chartPath: $(helmChartPath)  # <-- FIXED
-              releaseName: ecommerce-secure
-              valueFile: $(helmChartPath)/values.yaml
-              install: true
-              arguments: >
-                --atomic
-                --timeout 10m
-                --set global.image.tag=$(imageTag)
-                --set global.image.repository=$(acrName).azurecr.io
+          kubectl apply -f k8s/ -n ecommerce
+          kubectl rollout restart deployment -n ecommerce
