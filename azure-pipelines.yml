@@ -4,50 +4,91 @@ trigger:
       - main
 
 variables:
-  acrName: acrecomsomyaea123.azurecr.io
-  namespace: ecommerce
+  ACR_NAME: acrecomsomyaea123.azurecr.io
+  AKS_RG: rg-ecommerce-arm
+  AKS_NAME: aks-ecommerce-eastasia
+  NAMESPACE: ecommerce
 
 stages:
+# ===============================
+# STAGE 1: BUILD & PUSH IMAGES
+# ===============================
 - stage: BuildAndPush
-  displayName: Build & Push Images
+  displayName: Build & Push Docker Images
   jobs:
   - job: DockerBuild
+    displayName: Docker Build Job
     pool:
       vmImage: ubuntu-latest
     steps:
+    - checkout: self
+
     - task: AzureCLI@2
+      displayName: Build & Push to ACR
       inputs:
         azureSubscription: sc-aks-acr-mi
         scriptType: bash
         scriptLocation: inlineScript
         inlineScript: |
+          set -e
+
+          echo "🔐 Logging into ACR"
           az acr login --name acrecomsomyaea123
 
-          services=("auth-service" "cart-service" "catalog-service" "order-service" "payment-service" "frontend" "gateway-service")
+          echo "📦 Using ACR: $(ACR_NAME)"
 
-          for svc in "${services[@]}"; do
-            docker build -t $acrName/$svc:latest ./$svc
-            docker push $acrName/$svc:latest
+          SERVICES=(
+            auth-service
+            cart-service
+            catalog-service
+            order-service
+            payment-service
+            frontend
+            gateway-service
+          )
+
+          for SERVICE in "${SERVICES[@]}"; do
+            echo "🚀 Building $SERVICE"
+            docker build \
+              -t $(ACR_NAME)/$SERVICE:latest \
+              ./$SERVICE
+
+            echo "📤 Pushing $SERVICE"
+            docker push $(ACR_NAME)/$SERVICE:latest
           done
-
+# ===============================
+# STAGE 2: DEPLOY TO AKS
+# ===============================
 - stage: DeployToAKS
   displayName: Deploy to AKS
   dependsOn: BuildAndPush
   jobs:
   - job: Deploy
+    displayName: AKS Deployment Job
     pool:
       vmImage: ubuntu-latest
     steps:
+    - checkout: self
+
     - task: AzureCLI@2
+      displayName: Deploy manifests to AKS
       inputs:
         azureSubscription: sc-aks-acr-mi
         scriptType: bash
         scriptLocation: inlineScript
         inlineScript: |
+          set -e
+
+          echo "🔑 Fetching AKS credentials"
           az aks get-credentials \
-            --resource-group rg-ecommerce-arm \
-            --name aks-ecommerce-eastasia \
+            --resource-group $(AKS_RG) \
+            --name $(AKS_NAME) \
             --overwrite-existing
 
-          kubectl apply -f k8s/ -n ecommerce
-          kubectl rollout restart deployment -n ecommerce
+          echo "📂 Applying Kubernetes manifests"
+          kubectl apply -f k8s/ -n $(NAMESPACE)
+
+          echo "🔄 Restarting deployments"
+          kubectl rollout restart deployment -n $(NAMESPACE)
+
+          echo "✅ Deployment completed successfully"
